@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Headline Hunter · Curtin Media Prep</title>
+<style>
+  :root{
+    --gold:#C7A04E;
+    --gold-bright:#E8C268;
+    --ink:#2b2b2b;
+    --charcoal:#3a3a3a;
+    --paper:#fbfaf7;
+    --line:#e4ddcd;
+    --ok:#4c9a6a;
+    --shadow:0 10px 40px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #fff6e0 0%, transparent 60%),
+      radial-gradient(1000px 500px at -10% 110%, #f3ead5 0%, transparent 55%),
+      #f6f2ea;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- top progress bar ---------- */
+  #progressWrap{position:fixed;top:0;left:0;right:0;height:6px;background:rgba(0,0,0,.06);z-index:50}
+  #progressBar{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-bright));
+    transition:width .5s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 12px var(--gold-bright)}
+
+  /* ---------- hero ---------- */
+  header.hero{
+    position:relative;overflow:hidden;color:#fff;text-align:center;
+    padding:62px 20px 120px;
+    background:linear-gradient(135deg,#1f1f1f 0%, #353535 55%, #44402f 100%);
+  }
+  header.hero::before{
+    content:"";position:absolute;inset:0;opacity:.5;
+    background:
+      radial-gradient(600px 300px at 15% 20%, rgba(199,160,78,.55), transparent 60%),
+      radial-gradient(700px 320px at 90% 80%, rgba(232,194,104,.35), transparent 60%);
+    animation:drift 14s ease-in-out infinite alternate;
+  }
+  @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-30px,20px,0) scale(1.1)}}
+  .brand{position:relative;display:inline-flex;align-items:center;gap:12px;margin-bottom:26px;
+    font-size:14px;letter-spacing:.18em;text-transform:uppercase;opacity:.92}
+  .brand .logo{width:26px;height:26px;border-radius:5px;background:var(--gold);
+    display:inline-flex;align-items:center;justify-content:center;color:#1f1f1f;font-weight:800;font-size:13px}
+  .hero h1{position:relative;font-size:clamp(34px,7vw,68px);font-weight:800;letter-spacing:-.02em;
+    line-height:1.02}
+  .hero h1 .hl{
+    background:linear-gradient(90deg,var(--gold-bright),#fff,var(--gold-bright));
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 5s linear infinite}
+  @keyframes shine{to{background-position:200% center}}
+  .hero p.sub{position:relative;max-width:620px;margin:18px auto 0;font-size:clamp(15px,2.2vw,19px);opacity:.9}
+  .hero .score{position:relative;margin-top:26px;display:inline-flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(6px);
+    padding:9px 18px;border-radius:40px;font-size:14px}
+  .hero .score b{font-size:18px;color:var(--gold-bright)}
+  .wave{position:absolute;bottom:-1px;left:0;width:100%;display:block}
+
+  /* ---------- layout ---------- */
+  main{max-width:880px;margin:-70px auto 60px;padding:0 18px;position:relative;z-index:2}
+
+  .card{
+    background:var(--paper);border-radius:18px;box-shadow:var(--shadow);
+    border:1px solid var(--line);overflow:hidden;margin-bottom:34px;
+    opacity:0;transform:translateY(24px);animation:rise .7s forwards;
+  }
+  .card:nth-of-type(1){animation-delay:.05s}
+  .card:nth-of-type(2){animation-delay:.18s}
+  .card:nth-of-type(3){animation-delay:.3s}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  .card-head{display:flex;align-items:center;gap:16px;padding:22px 26px;
+    background:linear-gradient(90deg,var(--gold),#b8924330);border-bottom:1px solid var(--line)}
+  .card-head .num{flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:#1f1f1f;color:var(--gold-bright);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px}
+  .card-head h2{font-size:22px;letter-spacing:-.01em;color:#1f1f1f}
+  .card-head .tag{font-size:12.5px;color:#6b5f3f;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+  .card-head{cursor:pointer;user-select:none}
+  .card-head:hover .chev{color:#b88e3a}
+  .card-head .chev{margin-left:auto;flex:0 0 auto;font-size:22px;line-height:1;color:#1f1f1f;transition:transform .3s ease}
+  .card.collapsed .chev{transform:rotate(-90deg)}
+  .card-body{padding:24px 26px 28px;overflow:hidden;max-height:3000px;
+    transition:max-height .38s ease,padding .38s ease,opacity .28s ease}
+  .card.collapsed .card-body{max-height:0;padding-top:0;padding-bottom:0;opacity:0}
+
+  .field{margin-bottom:24px}
+  .field:last-child{margin-bottom:0}
+  label.q{display:flex;align-items:baseline;gap:8px;font-weight:700;font-size:16px;margin-bottom:6px;color:#33312b}
+  label.q .pill{font-size:11px;font-weight:700;color:#fff;background:var(--gold);padding:2px 9px;border-radius:30px;letter-spacing:.04em}
+  .hint{font-size:13.5px;color:#7a7363;margin:-2px 0 10px;display:flex;flex-wrap:wrap;gap:6px}
+  .hint .chip{background:#f1ead8;border:1px solid var(--line);border-radius:30px;padding:3px 11px;font-size:12.5px;color:#5f5638;cursor:default;transition:.2s}
+  .hint .chip:hover{background:var(--gold);color:#fff;transform:translateY(-1px)}
+
+  textarea,input[type=text]{
+    width:100%;font-family:inherit;font-size:15.5px;color:var(--ink);
+    border:1.5px solid var(--line);border-radius:12px;padding:13px 15px;background:#fff;
+    transition:.2s;resize:vertical;line-height:1.5;
+  }
+  textarea{min-height:84px}
+  textarea:focus,input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(199,160,78,.16)}
+  .counter{text-align:right;font-size:12px;color:#a59c84;margin-top:5px;transition:.2s}
+  .counter.good{color:var(--ok);font-weight:600}
+
+  /* headline special field */
+  .headline-field input{font-size:21px;font-weight:800;text-align:center;padding:18px 16px;
+    border-style:dashed;border-width:2px}
+  .headline-field input::placeholder{font-weight:400;color:#c3bba6}
+
+  /* live newspaper preview */
+  .preview{margin-top:18px;background:#fff;border:1px solid #ddd;border-radius:12px;padding:22px 24px;
+    box-shadow:inset 0 0 0 1px #fff, 0 6px 22px rgba(0,0,0,.08);position:relative}
+  .preview::before{content:"LIVE PREVIEW";position:absolute;top:-10px;left:18px;background:var(--ink);color:#fff;
+    font-size:10px;letter-spacing:.18em;padding:3px 9px;border-radius:20px}
+  .preview .masthead{font-family:Georgia,'Times New Roman',serif;text-align:center;font-size:13px;
+    letter-spacing:.32em;text-transform:uppercase;color:#888;border-bottom:2px solid #222;padding-bottom:6px;margin-bottom:14px}
+  .preview .pv-headline{font-family:Georgia,'Times New Roman',serif;font-size:clamp(22px,4.5vw,32px);
+    font-weight:800;line-height:1.12;color:#161616;text-align:center;transition:.25s}
+  .preview .pv-headline.empty{color:#c9c2b0;font-weight:400;font-style:italic;font-size:18px}
+  .preview .pv-sub{font-family:Georgia,serif;text-align:center;color:#555;margin-top:10px;font-size:14.5px;font-style:italic}
+  .preview .byline{text-align:center;font-size:11px;color:#aaa;margin-top:12px;letter-spacing:.1em;text-transform:uppercase}
+
+  /* actions */
+  .actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:10px 0 40px}
+  button.act{font-family:inherit;font-size:15px;font-weight:700;border:none;cursor:pointer;
+    padding:14px 24px;border-radius:40px;display:inline-flex;align-items:center;gap:9px;transition:.2s;color:#fff}
+  button.act:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.18)}
+  button.act:active{transform:translateY(0)}
+  .b-gold{background:linear-gradient(135deg,var(--gold),#b88e3a)}
+  .b-dark{background:linear-gradient(135deg,#3a3a3a,#1f1f1f)}
+  .b-ghost{background:#fff;color:#6b5f3f;border:1.5px solid var(--line)}
+  .b-ghost:hover{color:#1f1f1f}
+
+  footer{text-align:center;color:#9a917b;font-size:13px;padding:10px 20px 50px}
+
+  /* toast */
+  #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);
+    background:#1f1f1f;color:#fff;padding:13px 22px;border-radius:40px;font-size:14.5px;font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:80;transition:transform .4s cubic-bezier(.2,.9,.3,1);display:flex;align-items:center;gap:9px}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast .dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
+
+  /* confetti */
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:70}
+
+  @media print{
+    #progressWrap,.actions,.hero .score,#toast,canvas{display:none!important}
+    body{background:#fff}
+    .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+    header.hero{padding:24px;color:#000;background:#fff}
+    .hero h1 .hl{color:#000;-webkit-text-fill-color:#000}
+    .card.collapsed .card-body{max-height:none!important;opacity:1!important;padding:24px 26px 28px!important}
+    .chev{display:none!important}
+  }
+</style>
+</head>
+<body>
+<div id="progressWrap"><div id="progressBar"></div></div>
+
+<header class="hero">
+  <div class="brand"><span class="logo">C</span> Curtin University · Media Communications</div>
+  <h1>Headline <span class="hl">Hunter</span></h1>
+  <p class="sub">Turn your research into a story the world wants to read. Craft a hook-worthy headline and your core messages before it goes to Media Comms.</p>
+  <div class="score">✨ Story strength: <b id="scoreNum">0%</b></div>
+  <svg class="wave" viewBox="0 0 1440 80" preserveAspectRatio="none"><path fill="#f6f2ea" d="M0,40 C360,90 1080,-10 1440,40 L1440,80 L0,80 Z"></path></svg>
+</header>
+
+<main>
+  <!-- ============ SECTION 1: HEADLINE HUNTING ============ -->
+  <section class="card">
+    <div class="card-head" role="button" tabindex="0" aria-expanded="true" onclick="toggleCard(this)">
+      <div class="num">1</div>
+      <div>
+        <div class="tag">The Hook</div>
+        <h2>Headline Hunting</h2>
+      </div>
+      <span class="chev" aria-hidden="true">▾</span>
+    </div>
+    <div class="card-body">
+
+      <div class="field">
+        <label class="q">Who are you pitching to? <span class="pill">AUDIENCE</span></label>
+        <div class="hint">
+          <span class="chip">Target outlet (e.g. The Conversation, ABC, The West)</span>
+          <span class="chip">A specific journalist / desk?</span>
+          <span class="chip">Who are their readers?</span>
+        </div>
+        <input type="text" id="f_outlet" data-track placeholder="e.g. The Conversation — science desk, or ABC Science">
+      </div>
+
+      <div class="field">
+        <label class="q">Brainstorm your ideas <span class="pill">DO</span></label>
+        <div class="hint">
+          <span class="chip">Hook the reader quickly</span>
+          <span class="chip">Include your keyword / research</span>
+          <span class="chip">Make it unique &amp; compelling</span>
+          <span class="chip">Think of everyday people</span>
+          <span class="chip">Play on words?</span>
+        </div>
+        <textarea data-track id="f_ideas" placeholder="Dump every headline idea here — go wild, no wrong answers. Try angles, puns, questions, bold claims..." style="min-height:120px"></textarea>
+        <div class="counter">0 characters</div>
+      </div>
+
+      <div class="field headline-field">
+        <label class="q">Your winning headline 🏆</label>
+        <input type="text" id="headlineInput" data-track maxlength="120" placeholder="Type your best headline here...">
+        <div class="counter" id="hlCounter">0 / 120 — aim for punchy (under 70 reads best)</div>
+
+        <div class="preview">
+          <div class="masthead" id="pvMasthead">The Curtin Chronicle</div>
+          <div class="pv-headline empty" id="pvHeadline">Your headline appears here as you type…</div>
+          <div class="pv-sub" id="pvSub"></div>
+          <div class="byline">Research · Curtin University</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="q">The 'so what?' factor <span class="pill">CONSIDER</span></label>
+        <div class="hint">
+          <span class="chip">What's the big picture?</span>
+          <span class="chip">Why should the reader care?</span>
+        </div>
+        <textarea data-track id="soWhatTease" placeholder="In one line — why should a busy reader stop and pay attention?"></textarea>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2: KEY MESSAGES ============ -->
+  <section class="card">
+    <div class="card-head" role="button" tabindex="0" aria-expanded="true" onclick="toggleCard(this)">
+      <div class="num">2</div>
+      <div>
+        <div class="tag">The Substance</div>
+        <h2>Key Messages</h2>
+      </div>
+      <span class="chev" aria-hidden="true">▾</span>
+    </div>
+    <div class="card-body">
+
+      <div class="field">
+        <label class="q">What? <span class="pill">Core message</span></label>
+        <div class="hint">
+          <span class="chip">Concise, clear statement of what you found</span>
+          <span class="chip">Main objective, scope &amp; nature of the work</span>
+        </div>
+        <textarea data-track id="f_what" placeholder="In plain language: what did you actually find or make?"></textarea>
+        <div class="counter">0 characters</div>
+      </div>
+
+      <div class="field">
+        <label class="q">So what? <span class="pill">Resonate</span></label>
+        <div class="hint">
+          <span class="chip">Why should people care?</span>
+          <span class="chip">Impact on people, communities, policy or society</span>
+          <span class="chip">Contribution to the field / industry / community</span>
+        </div>
+        <textarea data-track id="f_sowhat" placeholder="Why it matters — the real-world relevance and impact."></textarea>
+        <div class="counter">0 characters</div>
+      </div>
+
+      <div class="field">
+        <label class="q">Now what? <span class="pill">Call to action</span></label>
+        <div class="hint">
+          <span class="chip">Suggest what needs to be done next</span>
+          <span class="chip">Actions, policy, further research, practical uses</span>
+        </div>
+        <textarea data-track id="f_nowwhat" placeholder="What should happen next? Recommendations, next steps, applications."></textarea>
+        <div class="counter">0 characters</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="act b-gold" onclick="copyBrief()">📋 Copy my brief</button>
+    <button class="act b-dark" onclick="window.print()">🖨️ Save as PDF / Print</button>
+    <button class="act b-ghost" onclick="resetAll()">↺ Start fresh</button>
+  </div>
+
+  <footer>Your work auto-saves in this browser. Built for the Curtin Media &amp; Communications course. 🎓</footer>
+</main>
+
+<div id="toast"><span class="dot"></span><span id="toastMsg">Saved!</span></div>
+<canvas id="confetti"></canvas>
+
+<script>
+const STORE='headline-hunter-v1';
+const fields=[...document.querySelectorAll('[data-track]')];
+
+/* ---------- load saved ---------- */
+(function load(){
+  try{
+    const data=JSON.parse(localStorage.getItem(STORE)||'{}');
+    fields.forEach((f,i)=>{ if(data[i]!=null) f.value=data[i]; });
+  }catch(e){}
+})();
+
+/* ---------- per-field counters & live updates ---------- */
+fields.forEach(f=>{
+  f.addEventListener('input',()=>{ updateCounter(f); updateProgress(); updatePreview(); save(); });
+  updateCounter(f);
+});
+
+function updateCounter(f){
+  const c=f.parentElement.querySelector('.counter');
+  if(!c) return;
+  const n=f.value.trim().length;
+  if(f.id==='headlineInput'){
+    c.textContent=`${f.value.length} / 120 — aim for punchy (under 70 reads best)`;
+    c.classList.toggle('good', f.value.length>0 && f.value.length<=70);
+  }else{
+    c.textContent=`${n} character${n===1?'':'s'}`;
+    c.classList.toggle('good', n>30);
+  }
+}
+
+/* ---------- live newspaper preview ---------- */
+const pv=document.getElementById('pvHeadline');
+const pvSub=document.getElementById('pvSub');
+const pvMast=document.getElementById('pvMasthead');
+function updatePreview(){
+  const h=document.getElementById('headlineInput').value.trim();
+  const s=document.getElementById('soWhatTease').value.trim();
+  const outlet=document.getElementById('f_outlet').value.trim();
+  if(h){ pv.textContent=h; pv.classList.remove('empty'); }
+  else { pv.textContent='Your headline appears here as you type…'; pv.classList.add('empty'); }
+  pvSub.textContent=s;
+  pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Curtin Chronicle';
+}
+updatePreview();
+
+/* ---------- progress / story strength ---------- */
+let lastPct=0;
+function updateProgress(){
+  const filled=fields.filter(f=>f.value.trim().length>3).length;
+  const pct=Math.round(filled/fields.length*100);
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('scoreNum').textContent=pct+'%';
+  if(pct===100 && lastPct<100) celebrate();
+  lastPct=pct;
+}
+updateProgress();
+
+/* ---------- save ---------- */
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    const data={}; fields.forEach((f,i)=>data[i]=f.value);
+    localStorage.setItem(STORE,JSON.stringify(data));
+  },350);
+}
+
+/* ---------- copy brief ---------- */
+function copyBrief(){
+  const g=id=>document.getElementById(id).value.trim()||'—';
+  const txt=
+`HEADLINE HUNTER — MEDIA BRIEF
+Curtin University · Media Communications
+================================
+
+🎯 TARGET OUTLET / JOURNALIST
+${g('f_outlet')}
+
+🏆 HEADLINE
+${g('headlineInput')}
+
+💡 IDEAS / BRAINSTORM
+${g('f_ideas')}
+
+✨ THE 'SO WHAT?' HOOK
+${g('soWhatTease')}
+
+— KEY MESSAGES ——————————————
+
+WHAT? (Core message)
+${g('f_what')}
+
+SO WHAT? (Resonate)
+${g('f_sowhat')}
+
+NOW WHAT? (Call to action)
+${g('f_nowwhat')}
+`;
+  navigator.clipboard.writeText(txt).then(
+    ()=>toast('Brief copied to clipboard!'),
+    ()=>toast('Copy failed — try Print instead')
+  );
+}
+
+/* ---------- reset ---------- */
+function resetAll(){
+  if(!confirm('Clear everything and start fresh?')) return;
+  fields.forEach(f=>f.value='');
+  localStorage.removeItem(STORE);
+  fields.forEach(updateCounter); updateProgress(); updatePreview();
+  toast('Cleared — fresh start!');
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  document.getElementById('toastMsg').textContent=msg;
+  const t=document.getElementById('toast'); t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ---------- confetti 🎉 ---------- */
+const cv=document.getElementById('confetti'),ctx=cv.getContext('2d');
+let parts=[],raf;
+function resize(){cv.width=innerWidth;cv.height=innerHeight}
+addEventListener('resize',resize);resize();
+function celebrate(){
+  toast('🎉 Brief complete — ready for Media Comms!');
+  const colors=['#C7A04E','#E8C268','#1f1f1f','#fff','#b8923a'];
+  parts=[];
+  for(let i=0;i<140;i++){
+    parts.push({x:innerWidth/2,y:innerHeight/3,
+      vx:(Math.cos(i)*8)+(i%5-2)*3,vy:Math.sin(i)*-9-Math.random()*6,
+      g:.28+Math.random()*.2,size:6+Math.random()*7,
+      col:colors[i%colors.length],rot:Math.random()*6,vr:(Math.random()-.5)*.4,life:0});
+  }
+  cancelAnimationFrame(raf);tick();
+}
+function tick(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  let alive=false;
+  parts.forEach(p=>{
+    p.life++;p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+    if(p.y<cv.height+30){alive=true;}
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+    ctx.fillStyle=p.col;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6);ctx.restore();
+  });
+  if(alive)raf=requestAnimationFrame(tick);else ctx.clearRect(0,0,cv.width,cv.height);
+}
+
+/* ---------- accordion ---------- */
+function toggleCard(head){const card=head.closest('.card');const c=card.classList.toggle('collapsed');head.setAttribute('aria-expanded',String(!c));}
+document.querySelectorAll('.card-head').forEach(h=>h.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCard(h);}}));
+</script>
+</body>
+</html>

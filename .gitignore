@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# macOS junk
+.DS_Store
+._*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

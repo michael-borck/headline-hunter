@@ -1,0 +1,9 @@
+# Optional convenience. Caddy runs separately (not in here) and reverse-proxies
+# to the published port below. So this just builds the image and exposes 8000.
+services:
+  headline-hunter:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"   # Caddy → http://localhost:8000
+    restart: unless-stopped
