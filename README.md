@@ -16,10 +16,12 @@ Both work **fully offline** — the PDF/DOCX parsers are bundled in the `lib/` f
 ## Using AI drafting (`studio.html`)
 
 1. Click **⚙️ Settings**, pick a provider, **Save**. (The hosted service is the default — no key needed.)
-2. Click **📄 Import paper**, drop in your PDF/DOCX/TXT.
-3. Click **✨ Draft my brief with AI** — fields fill with editable drafts (labelled *"AI draft — edit me"*).
-4. **Pick your headline.** The AI offers 3–5 candidates under the headline field — tap one to use it (you can still edit). *AI suggests, you confirm.*
+2. Click **📄 Import paper**, drop in your PDF/DOCX/TXT. Optionally set the **audience/outlet** and a **tone** (Plain / Warm / Formal / Playful) — both steer the whole draft.
+3. Click **✨ Draft my brief with AI** — fields fill with editable drafts grounded in the paper (labelled *"AI draft — edit me"*).
+4. **Pick your headline.** The AI offers 3–5 candidates under the headline field — tap one to use it (you can still edit), or hit **🔄 New ideas** to re-roll fresh ones in your chosen tone. *AI suggests, you confirm.*
 5. Sharpen the rest, then **📄 Press release (PDF)** downloads a formatted, inverted-pyramid release (headline → significance → call to action) ready to send to Media Comms.
+
+> The draft is **grounded in the paper's text** (first ~40k characters — a full abstract/intro/results, plenty on Haiku's 200K context) with a "don't invent findings" guardrail. It's still a synthesis, not a quote — have researchers sanity-check it, especially the *"Now what?"* call to action.
 
 No AI key? Use **📋 Copy prompt** instead — it builds a ready-made prompt from your paper that you paste into Claude/ChatGPT yourself, then paste the answers back. Zero keys, zero cost.
 

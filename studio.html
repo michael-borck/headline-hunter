@@ -90,7 +90,13 @@
 
   /* AI suggestion picker — "AI suggests, you confirm" */
   .choices{margin:2px 0 14px}
-  .choices-label{font-size:13.5px;color:#8a6d2f;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .choices-label{font-size:13.5px;color:#8a6d2f;font-weight:700;margin-bottom:9px;display:flex;align-items:center;
+    justify-content:space-between;gap:10px}
+  .reroll{font-family:inherit;font-size:12.5px;font-weight:700;color:#6b5f3f;background:#fff;border:1.5px solid var(--line);
+    border-radius:30px;padding:5px 12px;cursor:pointer;transition:.18s;white-space:nowrap}
+  .reroll:hover{border-color:var(--gold);color:#1f1f1f;background:#fdf7e7}
+  .reroll:disabled{opacity:.55;cursor:default}
+  .muted{font-weight:400;color:#8a8268;font-size:12px}
   .choice-list{display:flex;flex-direction:column;gap:9px}
   .choice{text-align:left;font-family:inherit;font-size:15.5px;font-weight:600;color:#33312b;background:#fff;
     border:1.5px solid var(--line);border-radius:12px;padding:12px 15px;cursor:pointer;display:flex;align-items:center;
@@ -231,7 +237,10 @@
         <label class="q">Your winning headline 🏆</label>
         <div class="ai-flag">✨ AI draft — edit me</div>
         <div id="headlineChoices" class="choices" hidden>
-          <div class="choices-label">✨ AI suggestions — tap one to use it, then tweak:</div>
+          <div class="choices-label">
+            <span>✨ AI suggestions — tap one to use it, then tweak:</span>
+            <button type="button" id="rerollBtn" class="reroll" onclick="regenerateHeadlines()" title="Generate fresh ideas">🔄 New ideas</button>
+          </div>
           <div id="choiceList" class="choice-list"></div>
         </div>
         <input type="text" id="headlineInput" data-track maxlength="120" placeholder="Type your best headline here...">
@@ -309,6 +318,15 @@
         <button class="m-ghost" style="padding:6px 12px;border-radius:20px;cursor:pointer" onclick="clearFile()">remove</button>
       </div>
       <div class="extract-preview" id="extractPreview"></div>
+      <label for="impOutlet">Audience / outlet <span class="muted">(optional)</span></label>
+      <input type="text" id="impOutlet" placeholder="e.g. The Conversation — science desk, or ABC Science">
+      <label for="toneSelect">Tone <span class="muted">— applies to the headline &amp; all sections</span></label>
+      <select id="toneSelect">
+        <option value="plain">Plain &amp; punchy (default)</option>
+        <option value="warm">Warm &amp; human</option>
+        <option value="formal">Formal / policy</option>
+        <option value="playful">Playful</option>
+      </select>
       <div class="status" id="importStatus"></div>
       <div class="provider-badge">AI provider: <b id="providerBadge">not set</b> · <a href="#" onclick="closeModal('importModal');openModal('settingsModal');return false;" style="color:#b88e3a">change</a></div>
     </div>
@@ -397,6 +415,7 @@ const PRESETS={
 /* =================== load saved =================== */
 (function load(){
   try{const d=JSON.parse(localStorage.getItem(STORE)||'{}');fields.forEach((f,i)=>{if(d[i]!=null)f.value=d[i];});}catch(e){}
+  try{paperText=localStorage.getItem('hh-paper')||'';}catch(e){}
 })();
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS)||'null')||defaultSettings();}catch(e){return defaultSettings();}}
 function defaultSettings(){return{provider:'hosted',...PRESETS.hosted,key:''};}
@@ -433,7 +452,7 @@ let saveTimer;
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{const d={};fields.forEach((f,i)=>d[i]=f.value);localStorage.setItem(STORE,JSON.stringify(d));},350);}
 
 /* =================== modals =================== */
-function openModal(id){document.getElementById(id).classList.add('open');if(id==='settingsModal')loadSettingsUI();if(id==='importModal')refreshProviderBadge();}
+function openModal(id){document.getElementById(id).classList.add('open');if(id==='settingsModal')loadSettingsUI();if(id==='importModal'){refreshProviderBadge();syncImportControls();}}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));});
@@ -503,7 +522,7 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
 fi.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
-function clearFile(){paperText='';fi.value='';document.getElementById('filechip').classList.remove('show');
+function clearFile(){paperText='';fi.value='';localStorage.removeItem('hh-paper');document.getElementById('filechip').classList.remove('show');
   document.getElementById('extractPreview').classList.remove('show');hideStatus('importStatus');}
 
 async function handleFile(file){
@@ -518,6 +537,7 @@ async function handleFile(file){
     else throw new Error('Unsupported file type — use PDF, DOCX or TXT.');
     paperText=paperText.replace(/\s+\n/g,'\n').trim();
     if(paperText.length<40)throw new Error('Barely any text found — is this a scanned/image-only PDF?');
+    try{localStorage.setItem('hh-paper',paperText);}catch(e){}   // survive a reload so re-roll keeps working
     const ep=document.getElementById('extractPreview');
     ep.textContent=paperText.slice(0,600)+(paperText.length>600?'…':'');ep.classList.add('show');
     showStatus('importStatus','ok',`Extracted ${paperText.length.toLocaleString()} characters. Ready to draft.`);
@@ -541,23 +561,28 @@ async function extractDocx(file){
 }
 
 /* =================== prompt building =================== */
+const PAPER_CHARS=40000;   // first several pages; Haiku's 200K context has ample room
+function clampPaper(text){return text.length>PAPER_CHARS?text.slice(0,PAPER_CHARS)+'\n…[truncated]':text;}
+
 function buildPrompt(text){
-  const body=text.length>14000?text.slice(0,14000)+'\n…[truncated]':text;
+  const body=clampPaper(text);
   const outlet=document.getElementById('f_outlet').value.trim();
   const audience=outlet
-    ? `\nThe researcher wants to pitch this to: "${outlet}". Tailor the tone, angle and reading level to that outlet and its audience.\n`
+    ? `\nThe researcher wants to pitch this to: "${outlet}". Tailor the angle and reading level to that outlet and its audience.`
     : '';
   return `You are a university media communications officer helping a researcher prepare their paper for the public.
-From the paper below, draft punchy, plain-English content for a media brief. Avoid jargon. Write for everyday people.${audience}
+From the paper below, draft punchy, plain-English content for a media brief. Avoid jargon. Write for everyday people.${toneClause()}${audience}
+
+Ground every field in what the paper actually says — do not invent findings, numbers or recommendations. If the paper does not state a clear call to action, base "nowWhat" only on what it explicitly suggests or the further work it points to. Do not overstate.
 
 Return ONLY valid JSON (no markdown fences) with exactly these keys:
 {
   "ideas": "3-5 alternative headline ideas, one per line",
   "headline": "the single best headline, under 70 characters, compelling and clear",
   "soWhatHook": "one sentence on why a busy reader should care",
-  "what": "the core message — a concise, clear statement of what was found (1-2 sentences)",
+  "what": "the core message — a concise, clear statement of what the paper found (1-2 sentences)",
   "soWhat": "why it matters — relevance and impact on people, communities, policy or society (1-2 sentences)",
-  "nowWhat": "the call to action — next steps, recommendations or practical applications (1-2 sentences)"
+  "nowWhat": "the call to action — next steps, recommendations or practical applications the paper points to (1-2 sentences)"
 }
 
 PAPER:
@@ -640,6 +665,56 @@ function buildCandidates(data){
   push(data.headline);                                   // AI's pick goes first
   String(data.ideas||'').split(/\n+/).forEach(push);     // then the brainstorm list
   return out.slice(0,5);
+}
+
+/* =================== tone / feel =================== */
+const TONES={
+  plain:'',
+  warm:' Use a warm, human, story-led voice.',
+  formal:' Use a formal, measured tone suitable for policy, government and industry audiences.',
+  playful:' Use a playful tone with light wordplay where it fits.'
+};
+function getTone(){return localStorage.getItem('hh-tone')||'plain';}
+function toneClause(){return TONES[getTone()]||'';}
+
+// Sync the import-modal audience/tone controls with the page + saved tone.
+function syncImportControls(){
+  const imp=document.getElementById('impOutlet');if(imp)imp.value=document.getElementById('f_outlet').value;
+  const t=document.getElementById('toneSelect');if(t)t.value=getTone();
+  if(paperText && !document.getElementById('importStatus').classList.contains('show'))
+    showStatus('importStatus','ok','A paper is loaded and ready — adjust tone/audience, then draft.');
+}
+
+/* =================== re-roll headlines (fresh ideas only) =================== */
+function buildHeadlinePrompt(text){
+  const body=clampPaper(text);
+  const outlet=document.getElementById('f_outlet').value.trim();
+  const audience=outlet?`\nPitching to: "${outlet}" — match that outlet's audience and reading level.`:'';
+  return `You are a university media communications officer.
+From the paper below, write 5 DISTINCT headline options for a media story. Vary the angle and structure across the five — don't just reword one idea.${toneClause()} Plain English, compelling, ideally under ~70 characters, grounded in what the paper actually says, no jargon.${audience}
+
+Return ONLY valid JSON (no markdown fences): {"headlines":["...","...","...","...","..."]}
+
+PAPER:
+"""${body}"""`;
+}
+async function regenerateHeadlines(){
+  if(!paperText){toast('Import a paper first (top-right).');return;}
+  const s=getSettings(),btn=document.getElementById('rerollBtn');
+  let orig='🔄 New ideas';if(btn){orig=btn.textContent;btn.disabled=true;btn.textContent='🔄 …';}
+  try{
+    const raw=await callLLM(s,buildHeadlinePrompt(paperText),'You output only JSON.');
+    const data=parseJSON(raw);
+    const cands=(Array.isArray(data.headlines)?data.headlines:[])
+      .map(x=>String(x).trim().replace(/^[\s\-*•\d.)\]]+/,'').trim()).filter(Boolean).slice(0,5);
+    if(!cands.length)throw new Error('No ideas returned.');
+    const best=cands[0];
+    fill('headlineInput',best);
+    renderHeadlineChoices(cands,best);
+    updatePreview();updateProgress();save();
+    toast('✨ Fresh headline ideas ready!');
+  }catch(e){toast('Re-roll failed: '+e.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
 }
 function renderHeadlineChoices(cands,chosen){
   const box=document.getElementById('headlineChoices'),list=document.getElementById('choiceList');
@@ -770,6 +845,19 @@ document.querySelectorAll('.card-head').forEach(h=>h.addEventListener('keydown',
 
 /* init badge */
 refreshProviderBadge();
+
+/* tone + audience controls */
+document.getElementById('toneSelect').value=getTone();
+document.getElementById('toneSelect').addEventListener('change',e=>localStorage.setItem('hh-tone',e.target.value));
+document.getElementById('impOutlet').addEventListener('input',e=>{
+  const f=document.getElementById('f_outlet');f.value=e.target.value;markEdited(f);updatePreview();save();});
+
+/* restore the AI suggestion picker from saved fields after a reload */
+(function restoreChoices(){
+  const ideas=document.getElementById('f_ideas').value,hl=document.getElementById('headlineInput').value.trim();
+  const cands=buildCandidates({headline:hl,ideas});
+  if(cands.length>1)renderHeadlineChoices(cands,hl);
+})();
 </script>
 </body>
 </html>
