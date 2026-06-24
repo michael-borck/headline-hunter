@@ -123,3 +123,18 @@ Then open `https://hunter.example.edu/` — the page defaults to the **Hosted (s
 - Manual use: nothing leaves your machine.
 - File text is extracted **in your browser**, never uploaded to us.
 - AI drafting sends the paper text only to the provider you choose — your own machine (Ollama), the provider you keyed in, or **your** hosted backend (which forwards it to Anthropic).
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE) — © 2026 Michael Borck. Built for the Curtin University Media & Communications course.
+
+### Third-party libraries
+The PDF/DOCX parsers and the PDF generator are bundled in `lib/` and remain under their own licenses (their notices are preserved in the minified files):
+
+| Library | Purpose | License |
+|---------|---------|---------|
+| [pdf.js](https://github.com/mozilla/pdf.js) | Extract text from PDFs in the browser | Apache-2.0 |
+| [mammoth.js](https://github.com/mwilliamson/mammoth.js) | Extract text from DOCX in the browser | BSD-2-Clause |
+| [jsPDF](https://github.com/parallax/jsPDF) | Generate the press-release PDF | MIT |
