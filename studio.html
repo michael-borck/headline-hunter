@@ -87,6 +87,19 @@
   .counter.good{color:var(--ok);font-weight:600}
   .headline-field input{font-size:21px;font-weight:800;text-align:center;padding:18px 16px;border-style:dashed;border-width:2px}
   .headline-field input::placeholder{font-weight:400;color:#c3bba6}
+
+  /* AI suggestion picker — "AI suggests, you confirm" */
+  .choices{margin:2px 0 14px}
+  .choices-label{font-size:13.5px;color:#8a6d2f;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .choice-list{display:flex;flex-direction:column;gap:9px}
+  .choice{text-align:left;font-family:inherit;font-size:15.5px;font-weight:600;color:#33312b;background:#fff;
+    border:1.5px solid var(--line);border-radius:12px;padding:12px 15px;cursor:pointer;display:flex;align-items:center;
+    gap:11px;transition:.18s;line-height:1.35}
+  .choice:hover{border-color:var(--gold);background:#fdf7e7;transform:translateY(-1px)}
+  .choice .mark{flex:0 0 auto;width:21px;height:21px;border-radius:50%;border:2px solid var(--line);display:inline-flex;
+    align-items:center;justify-content:center;font-size:12px;color:transparent;transition:.18s}
+  .choice.sel{border-color:var(--gold);background:#fbf2dc;box-shadow:0 0 0 3px rgba(199,160,78,.16)}
+  .choice.sel .mark{background:var(--gold);border-color:var(--gold);color:#fff}
   .preview{margin-top:18px;background:#fff;border:1px solid #ddd;border-radius:12px;padding:22px 24px;
     box-shadow:inset 0 0 0 1px #fff,0 6px 22px rgba(0,0,0,.08);position:relative}
   .preview::before{content:"LIVE PREVIEW";position:absolute;top:-10px;left:18px;background:var(--ink);color:#fff;
@@ -217,6 +230,10 @@
       <div class="field headline-field">
         <label class="q">Your winning headline 🏆</label>
         <div class="ai-flag">✨ AI draft — edit me</div>
+        <div id="headlineChoices" class="choices" hidden>
+          <div class="choices-label">✨ AI suggestions — tap one to use it, then tweak:</div>
+          <div id="choiceList" class="choice-list"></div>
+        </div>
         <input type="text" id="headlineInput" data-track maxlength="120" placeholder="Type your best headline here...">
         <div class="counter" id="hlCounter">0 / 120 — aim for punchy (under 70 reads best)</div>
         <div class="preview">
@@ -268,8 +285,9 @@
   </section>
 
   <div class="actions">
-    <button class="act b-gold" onclick="copyBrief()">📋 Copy my brief</button>
-    <button class="act b-dark" onclick="window.print()">🖨️ Save as PDF / Print</button>
+    <button class="act b-gold" onclick="downloadPressPDF()">📄 Press release (PDF)</button>
+    <button class="act b-ghost" onclick="copyBrief()">📋 Copy my brief</button>
+    <button class="act b-dark" onclick="window.print()">🖨️ Print worksheet</button>
     <button class="act b-ghost" onclick="resetAll()">↺ Start fresh</button>
   </div>
   <footer>Auto-saves in this browser. Built for the Curtin Media &amp; Communications course. 🎓</footer>
@@ -349,7 +367,8 @@
 const CDN={
   pdf:'lib/pdf.min.js',
   pdfWorker:'lib/pdf.worker.min.js',
-  mammoth:'lib/mammoth.browser.min.js'
+  mammoth:'lib/mammoth.browser.min.js',
+  jspdf:'lib/jspdf.umd.min.js'
 };
 function loadScript(src){return new Promise((res,rej)=>{
   if(document.querySelector(`script[src="${src}"]`))return res();
@@ -590,11 +609,17 @@ async function draftWithAI(){
   try{
     const raw=await callLLM(s,buildPrompt(paperText),'You output only JSON.');
     const data=parseJSON(raw);
-    fill('f_ideas',data.ideas);fill('headlineInput',data.headline);fill('soWhatTease',data.soWhatHook);
+    const cands=buildCandidates(data);
+    fill('f_ideas',data.ideas);fill('soWhatTease',data.soWhatHook);
     fill('f_what',data.what);fill('f_sowhat',data.soWhat);fill('f_nowwhat',data.nowWhat);
+    const best=(data.headline||cands[0]||'').trim();
+    if(best)fill('headlineInput',best);
+    renderHeadlineChoices(cands,best);
     updatePreview();updateProgress();save();
-    showStatus('importStatus','ok','Draft ready! Fields filled — now edit & make it yours.');
-    toast('✨ AI draft ready — edit me!');
+    showStatus('importStatus','ok',cands.length>1
+      ?`Draft ready — ${cands.length} headline ideas to choose from below.`
+      :'Draft ready! Fields filled — now edit & make it yours.');
+    toast('✨ AI draft ready — pick a headline!');
     setTimeout(()=>closeModal('importModal'),900);
   }catch(e){showStatus('importStatus','err','Draft failed: '+e.message);}
   finally{btn.disabled=false;btn.textContent=orig;}
@@ -605,6 +630,80 @@ function parseJSON(raw){
   let t=raw.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
   const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)t=t.slice(a,b+1);
   return JSON.parse(t);
+}
+
+/* =================== AI suggests, user confirms =================== */
+function buildCandidates(data){
+  const out=[],seen=new Set();
+  const push=t=>{t=(t||'').trim().replace(/^[\s\-*•\d.)\]]+/,'').trim();
+    if(t&&!seen.has(t.toLowerCase())){seen.add(t.toLowerCase());out.push(t);}};
+  push(data.headline);                                   // AI's pick goes first
+  String(data.ideas||'').split(/\n+/).forEach(push);     // then the brainstorm list
+  return out.slice(0,5);
+}
+function renderHeadlineChoices(cands,chosen){
+  const box=document.getElementById('headlineChoices'),list=document.getElementById('choiceList');
+  list.innerHTML='';
+  if(!cands||cands.length<2){box.hidden=true;return;}     // nothing to choose between
+  cands.forEach(text=>{
+    const b=document.createElement('button');b.type='button';b.className='choice';
+    b.innerHTML='<span class="mark">✓</span><span class="txt"></span>';
+    b.querySelector('.txt').textContent=text;
+    if(text===chosen)b.classList.add('sel');
+    b.addEventListener('click',()=>{
+      [...list.children].forEach(c=>c.classList.remove('sel'));
+      b.classList.add('sel');
+      const inp=document.getElementById('headlineInput');
+      inp.value=text;inp.closest('.field')?.classList.add('ai-drafted');
+      updateCounter(inp);updatePreview();updateProgress();save();
+    });
+    list.appendChild(b);
+  });
+  box.hidden=false;
+}
+
+/* =================== press release PDF =================== */
+function downloadPressPDF(){
+  const headline=document.getElementById('headlineInput').value.trim();
+  if(!headline){toast('Add a headline first.');return;}
+  loadScript(CDN.jspdf).then(()=>{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'pt',format:'a4'});
+    const v=id=>document.getElementById(id).value.trim();
+    const M=56,W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),CW=W-2*M;
+    let y=M;
+    const ensure=h=>{if(y+h>H-M){doc.addPage();y=M;}};
+    const para=(text,o={})=>{
+      if(!text)return;
+      const size=o.size||11,style=o.style||'normal',color=o.color||[40,40,40],gap=o.gap==null?14:o.gap,lh=o.lh||1.45;
+      doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(color[0],color[1],color[2]);
+      doc.splitTextToSize(text,CW).forEach(ln=>{ensure(size*lh);doc.text(ln,M,y);y+=size*lh;});
+      y+=gap;
+    };
+    // banner
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(150,150,150);
+    doc.text('FOR IMMEDIATE RELEASE',M,y);
+    doc.text(new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}),W-M,y,{align:'right'});
+    y+=10;doc.setDrawColor(199,160,78);doc.setLineWidth(1.4);doc.line(M,y,W-M,y);y+=24;
+    // source · headline · subhead
+    para('CURTIN UNIVERSITY · MEDIA COMMUNICATIONS',{size:9,style:'bold',color:[150,140,90],gap:16});
+    para(headline,{size:22,style:'bold',color:[20,20,20],gap:9,lh:1.18});
+    para(v('soWhatTease'),{size:13,style:'italic',color:[90,90,90],gap:20,lh:1.3});
+    // body — inverted pyramid: what (lede) → so what → now what
+    const what=v('f_what');
+    if(what)para('PERTH, AUSTRALIA — '+what,{gap:14});
+    para(v('f_sowhat'),{gap:14});
+    para(v('f_nowwhat'),{gap:20});
+    para('— ENDS —',{size:10,style:'bold',color:[120,120,120],gap:18});
+    // boilerplate / contact
+    ensure(20);doc.setDrawColor(220,220,220);doc.setLineWidth(1);doc.line(M,y,W-M,y);y+=18;
+    para('Media contact: [Name] · [email] · [phone]',{size:9,color:[120,120,120],gap:8});
+    para('Notes to editors: Based on research from Curtin University. Full paper and interviews available on request.',
+      {size:9,color:[120,120,120],gap:0});
+    const fname=(headline.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40))||'press-release';
+    doc.save(fname+'.pdf');
+    toast('📄 Press release PDF downloaded');
+  }).catch(e=>toast('PDF failed: '+e.message));
 }
 
 /* =================== copy brief / reset =================== */
@@ -641,6 +740,7 @@ ${g('f_nowwhat')}
 }
 function resetAll(){if(!confirm('Clear everything and start fresh?'))return;
   fields.forEach(f=>{f.value='';f.closest('.field')?.classList.remove('ai-drafted');});
+  const hc=document.getElementById('headlineChoices');hc.hidden=true;document.getElementById('choiceList').innerHTML='';
   localStorage.removeItem(STORE);fields.forEach(updateCounter);updateProgress();updatePreview();toast('Cleared — fresh start!');}
 
 /* =================== status + toast =================== */

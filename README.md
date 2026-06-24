@@ -15,9 +15,11 @@ Both work **fully offline** — the PDF/DOCX parsers are bundled in the `lib/` f
 
 ## Using AI drafting (`studio.html`)
 
-1. Click **⚙️ Settings**, pick a provider, **Save**.
+1. Click **⚙️ Settings**, pick a provider, **Save**. (The hosted service is the default — no key needed.)
 2. Click **📄 Import paper**, drop in your PDF/DOCX/TXT.
-3. Click **✨ Draft my brief with AI** — fields fill with editable drafts (labelled *"AI draft — edit me"*). Then sharpen them.
+3. Click **✨ Draft my brief with AI** — fields fill with editable drafts (labelled *"AI draft — edit me"*).
+4. **Pick your headline.** The AI offers 3–5 candidates under the headline field — tap one to use it (you can still edit). *AI suggests, you confirm.*
+5. Sharpen the rest, then **📄 Press release (PDF)** downloads a formatted, inverted-pyramid release (headline → significance → call to action) ready to send to Media Comms.
 
 No AI key? Use **📋 Copy prompt** instead — it builds a ready-made prompt from your paper that you paste into Claude/ChatGPT yourself, then paste the answers back. Zero keys, zero cost.
 
@@ -68,6 +70,27 @@ docker run --rm -p 8000:8000 --env-file .env headline-hunter
 # or, with the bundled compose file:
 docker compose up -d --build
 ```
+
+### 2c. Run from the prebuilt image — recommended for the VPS
+A GitHub Actions workflow (`.github/workflows/docker.yml`) builds the image on every push to `main` and publishes it to GHCR as `ghcr.io/michael-borck/headline-hunter:latest`. On the VPS you never build — you just pull:
+
+```bash
+# one-time: create the .env (key + optional passcode)
+cp .env.example .env && nano .env
+
+# deploy / update — that's the whole loop
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+`docker-compose.prod.yml` binds to `127.0.0.1:8000` (localhost only) so Caddy is the single public door.
+
+**GHCR auth:** because the repo is private, the image package is private too. Either:
+- make the package public — GitHub → repo → Packages → `headline-hunter` → Package settings → *Change visibility → Public* (the image carries no secrets), **or**
+- log in on the VPS once with a PAT that has `read:packages`:
+  ```bash
+  echo "$GHCR_PAT" | docker login ghcr.io -u michael-borck --password-stdin
+  ```
 
 ### 3. Put Caddy in front (runs separately, outside the container)
 The app listens on `:8000`; point your existing Caddy at it for automatic HTTPS:

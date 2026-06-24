@@ -1,0 +1,14 @@
+# Production compose for the VPS — pulls the prebuilt image from GHCR, no build.
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Caddy runs separately on the host and reverse-proxies to 127.0.0.1:8000.
+services:
+  headline-hunter:
+    image: ghcr.io/michael-borck/headline-hunter:latest
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost only — Caddy is the public door
+    restart: unless-stopped
+    pull_policy: always
