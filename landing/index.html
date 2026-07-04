@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headline Hunter — turn your research paper into front-page news</title>
+<meta name="description" content="Import your research paper, let AI draft headline ideas and key messages, then export a press-release PDF. Runs in your browser — your paper never leaves it.">
+<style>
+:root{
+  --paper:#f6f1e5;
+  --paper-dark:#efe8d6;
+  --ink:#1c1a17;
+  --muted:#6f6753;
+  --rule:#c9bfa4;
+  --red:#b3382c;
+  --red-dark:#93291f;
+  --gold:#b88e3a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:Georgia,'Times New Roman',Times,serif;
+  line-height:1.55;
+  background-image:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.5),transparent 60%);
+}
+a{color:var(--ink)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+.smallcaps{
+  font-family:Georgia,serif;
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  font-size:.72rem;
+  color:var(--muted);
+}
+
+/* ---- top dateline bar ---- */
+.dateline{
+  border-bottom:1px solid var(--ink);
+  padding:8px 0;
+}
+.dateline .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---- masthead ---- */
+header.masthead{text-align:center;padding:34px 0 0}
+.masthead h1{
+  font-size:clamp(2.6rem,7.5vw,4.6rem);
+  font-weight:900;
+  letter-spacing:.01em;
+  line-height:1.05;
+}
+.masthead .tagline{
+  font-style:italic;
+  color:var(--muted);
+  margin:6px 0 14px;
+}
+.masthead .rules{
+  border-top:3px double var(--ink);
+  border-bottom:1px solid var(--ink);
+  padding:6px 0;
+  display:flex;justify-content:center;gap:28px;flex-wrap:wrap;
+}
+
+/* ---- hero ---- */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;padding:56px 0 48px}
+.hero h2{font-size:clamp(1.7rem,3.6vw,2.5rem);line-height:1.15;margin-bottom:14px}
+.hero p.lede{font-size:1.08rem;margin-bottom:10px}
+.hero p.lede:first-letter{
+  float:left;font-size:3.1em;line-height:.85;padding:4px 8px 0 0;font-weight:700;
+}
+.hero p{margin-bottom:10px;color:#3a352c}
+.ctas{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px}
+.btn{
+  display:inline-block;text-decoration:none;
+  padding:13px 26px;font-size:1rem;font-weight:700;
+  border:2px solid var(--ink);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.btn-primary{background:var(--red);border-color:var(--red-dark);color:#fdf9ef}
+.btn-ghost{background:transparent;color:var(--ink)}
+.ctas .note{flex-basis:100%;font-size:.85rem;color:var(--muted);font-style:italic}
+
+/* mock newspaper clipping */
+.clipping{
+  background:#fbf7ec;
+  border:1px solid var(--rule);
+  box-shadow:6px 8px 0 rgba(28,26,23,.14);
+  transform:rotate(1.6deg);
+  padding:22px 24px 18px;
+  max-width:400px;justify-self:center;
+}
+.clipping .c-mast{
+  text-align:center;font-weight:900;letter-spacing:.14em;font-size:.85rem;
+  border-bottom:2px solid var(--ink);padding-bottom:6px;text-transform:uppercase;
+}
+.clipping .c-date{
+  display:flex;justify-content:space-between;font-size:.6rem;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--muted);
+  border-bottom:1px solid var(--rule);padding:4px 0;margin-bottom:12px;
+}
+.clipping h3{font-size:1.45rem;line-height:1.15;margin-bottom:4px}
+.clipping .c-sub{font-style:italic;font-size:.85rem;color:var(--muted);margin-bottom:12px}
+.clipping .c-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.clipping .c-col span{
+  display:block;height:6px;margin-bottom:6px;border-radius:1px;
+  background:repeating-linear-gradient(90deg,#c9c0aa 0,#c9c0aa 82%,transparent 82%,transparent 100%);
+}
+.clipping .c-col span:nth-child(2n){width:96%}
+.clipping .c-col span:nth-child(3n){width:88%}
+.clipping .c-col span:last-child{width:60%}
+.clipping .c-stamp{
+  position:absolute;top:-14px;right:-16px;
+  background:var(--gold);color:#fff;font-weight:900;font-size:.65rem;
+  letter-spacing:.16em;text-transform:uppercase;
+  padding:7px 12px;transform:rotate(6deg);box-shadow:2px 3px 0 rgba(28,26,23,.25);
+}
+.clipping{position:relative}
+
+/* ---- section headers ---- */
+section{padding:44px 0}
+.sec-head{
+  display:flex;align-items:center;gap:16px;margin-bottom:30px;
+}
+.sec-head::before,.sec-head::after{content:"";flex:1;border-top:1px solid var(--ink)}
+.sec-head h2{
+  font-size:1.05rem;font-weight:900;text-transform:uppercase;letter-spacing:.22em;
+  white-space:nowrap;
+}
+
+/* ---- how it works: three newspaper columns ---- */
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.cols3 .col{padding:0 26px;border-left:1px solid var(--rule)}
+.cols3 .col:first-child{border-left:none;padding-left:0}
+.cols3 .col:last-child{padding-right:0}
+.col .kicker{color:var(--red);font-weight:900;font-size:2rem;line-height:1;font-style:italic}
+.col h3{font-size:1.2rem;margin:8px 0 8px}
+.col p{font-size:.95rem;color:#3a352c}
+
+/* ---- notice box ---- */
+.notice{
+  border:2px solid var(--ink);
+  padding:22px 26px;
+  display:flex;gap:20px;align-items:flex-start;
+  background:var(--paper-dark);
+}
+.notice .n-label{
+  font-weight:900;letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;
+  color:var(--red);white-space:nowrap;padding-top:2px;
+}
+.notice p{font-size:.95rem}
+.notice b{white-space:nowrap}
+
+/* ---- editions ---- */
+.editions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}
+.edition{
+  border:1px solid var(--ink);
+  background:#fbf7ec;
+  padding:24px 22px;
+  display:flex;flex-direction:column;
+}
+.edition .e-tag{
+  align-self:flex-start;
+  font-size:.65rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;
+  border:1px solid var(--ink);padding:3px 9px;margin-bottom:14px;
+}
+.edition.featured .e-tag{background:var(--red);border-color:var(--red-dark);color:#fdf9ef}
+.edition h3{font-size:1.35rem;margin-bottom:8px}
+.edition p{font-size:.92rem;color:#3a352c;margin-bottom:10px}
+.edition .grow{flex:1}
+.edition code,.edition pre{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.78rem;
+}
+.edition pre{
+  background:var(--ink);color:#efe8d6;padding:10px 12px;overflow-x:auto;margin-top:6px;
+}
+.edition a.e-link{font-weight:700;color:var(--red)}
+
+/* ---- footer ---- */
+footer{
+  margin-top:30px;
+  border-top:3px double var(--ink);
+  padding:22px 0 40px;
+}
+footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:baseline}
+footer a{color:var(--muted)}
+
+/* ---- responsive ---- */
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:36px;padding-top:40px}
+  .clipping{transform:rotate(1deg)}
+  .cols3{grid-template-columns:1fr}
+  .cols3 .col{border-left:none;border-top:1px solid var(--rule);padding:20px 0}
+  .cols3 .col:first-child{border-top:none;padding-top:0}
+  .editions{grid-template-columns:1fr}
+  .notice{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="dateline">
+  <div class="wrap">
+    <span class="smallcaps">Vol. 1 · Free — take one</span>
+    <span class="smallcaps" id="today">Published daily</span>
+    <span class="smallcaps">Perth, Western Australia</span>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <h1>The Headline Hunter</h1>
+    <p class="tagline">All the research that’s fit to print</p>
+    <div class="rules">
+      <span class="smallcaps">Import your paper</span>
+      <span class="smallcaps">Draft with AI</span>
+      <span class="smallcaps">Export a press release</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <div>
+      <h2>Your research, front-page ready.</h2>
+      <p class="lede">You spent years on the study. Now you have one headline, one hook and three key messages to win over a journalist — or lose them. Headline Hunter walks you through the classic media-prep worksheet: <em>what</em> you found, <em>so what</em> it matters, and <em>now what</em> should happen.</p>
+      <p>Drop in your paper (PDF, DOCX or plain text) and AI drafts headline ideas, a “so-what” hook and your key messages — grounded in what the paper actually says. Pick your favourite headline, watch it typeset live on a mock front page, then export a one-page press-release PDF.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="app/studio.html">Open the Studio&nbsp;→</a>
+        <a class="btn btn-ghost" href="app/index.html">Just the worksheet</a>
+        <span class="note">No sign-up. The Studio uses your own AI key, a local model, or a copy-paste prompt — your choice.</span>
+      </div>
+    </div>
+    <div class="clipping" aria-hidden="true">
+      <span class="c-stamp">Extra! Extra!</span>
+      <div class="c-mast">The Curtin Chronicle</div>
+      <div class="c-date"><span>Morning edition</span><span>Page one</span></div>
+      <h3>Local Researcher Finally Explains Paper In Plain English</h3>
+      <p class="c-sub">Journalists reportedly “able to understand it on the first read”</p>
+      <div class="c-cols">
+        <div class="c-col"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="c-col"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="how">
+    <div class="sec-head"><h2>How it works</h2></div>
+    <div class="cols3">
+      <div class="col">
+        <div class="kicker">1.</div>
+        <h3>Import your paper</h3>
+        <p>Drag in a PDF, DOCX or text file. The text is extracted <em>inside your browser</em> — nothing is uploaded anywhere. Works offline, too.</p>
+      </div>
+      <div class="col">
+        <div class="kicker">2.</div>
+        <h3>Let AI draft the brief</h3>
+        <p>Get 3–5 headline ideas, a one-line hook, and your what / so-what / now-what messages — written for everyday readers and grounded in the paper, with tone and target-outlet controls.</p>
+      </div>
+      <div class="col">
+        <div class="kicker">3.</div>
+        <h3>Make it yours &amp; export</h3>
+        <p>Every field stays editable — AI suggests, you decide. Re-roll headlines, watch the live front-page preview, then export a press-release PDF or print the worksheet.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="notice">
+      <span class="n-label">Public notice</span>
+      <p><b>Your paper never leaves your browser.</b> File parsing happens locally with bundled libraries. If you use AI drafting, only the extracted text goes directly from your browser to the provider <em>you</em> choose — and your API key is stored only in this browser, never on our servers (we don’t have any).</p>
+    </div>
+  </section>
+
+  <section id="editions">
+    <div class="sec-head"><h2>Choose your edition</h2></div>
+    <div class="editions">
+
+      <div class="edition featured">
+        <span class="e-tag">This site</span>
+        <h3>Browser edition</h3>
+        <p class="grow">Zero install. Open the Studio, paste your own API key (Claude, OpenAI-compatible, or a local Ollama) in Settings — or skip keys entirely and use <em>Copy prompt</em> with any chatbot you already have.</p>
+        <p><a class="e-link" href="app/studio.html">Open the Studio →</a></p>
+      </div>
+
+      <div class="edition">
+        <span class="e-tag">For institutions</span>
+        <h3>Hosted edition</h3>
+        <p class="grow">Self-host with Docker and your users never need a key: the server holds one API key (via <code>.env</code>), with an optional access passcode and per-IP rate limiting built in.</p>
+        <pre>docker compose up -d</pre>
+        <p style="margin-top:8px"><a class="e-link" href="https://github.com/michael-borck/headline-hunter#self-hosting-the-shared-service-vps">Hosting guide →</a></p>
+      </div>
+
+      <div class="edition">
+        <span class="e-tag">Offline / tinkerers</span>
+        <h3>Local edition</h3>
+        <p class="grow">It’s just HTML — clone the repo and double-click <code>studio.html</code>, or run the tiny launcher to auto-fill keys from your environment.</p>
+        <pre>git clone github.com/michael-borck/headline-hunter
+python3 serve.py</pre>
+        <p style="margin-top:8px"><a class="e-link" href="https://github.com/michael-borck/headline-hunter">View on GitHub →</a></p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="smallcaps">Headline Hunter — built at Curtin University</span>
+    <span class="smallcaps">
+      <a href="https://github.com/michael-borck/headline-hunter">GitHub</a> ·
+      <a href="https://github.com/michael-borck/headline-hunter/blob/main/LICENSE">MIT License</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+document.getElementById('today').textContent=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+</script>
+</body>
+</html>

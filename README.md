@@ -2,6 +2,16 @@
 
 Two web forms that turn the Curtin Media Communications worksheets (*Headline Hunting* + *Key Messages*) into a fun, interactive tool for prepping research for media.
 
+**Try it now:** [landing page](https://michael-borck.github.io/headline-hunter/) · [Studio (AI)](https://michael-borck.github.io/headline-hunter/app/studio.html) · [simple worksheet](https://michael-borck.github.io/headline-hunter/app/index.html)
+
+## Three ways to run it
+
+1. **Browser (GitHub Pages)** — the links above. Bring your own key (or use *Copy prompt*, no key at all). The "Hosted (shared)" provider isn't available there — the site is static, so the Studio detects that and defaults to BYOK.
+2. **Self-hosted (Docker)** — you hold one `ANTHROPIC_API_KEY` in `.env` and your users need no key. See [Self-hosting the shared service](#self-hosting-the-shared-service-vps).
+3. **Local** — clone and double-click `studio.html`, or `python3 serve.py` for env-var key detection.
+
+The landing page and apps deploy to GitHub Pages automatically on every push to `main` (`.github/workflows/pages.yml` — landing at the root, apps under `/app/`).
+
 ## Two versions
 
 | File | What it is | Needs |
@@ -43,8 +53,6 @@ python3 serve.py
 ```
 
 Otherwise just paste your key into Settings manually — everything else works the same.
-
----
 
 ---
 

@@ -412,13 +412,27 @@ const PRESETS={
     help:'Any OpenAI-compatible endpoint (OpenAI, Together, Groq, LM Studio, vLLM…). Set base URL + key + model.'}
 };
 
+/* =================== hosted service detection =================== */
+// On static hosting (e.g. GitHub Pages) there is no backend, so the
+// "Hosted (shared)" provider can't work. Probe once and adapt the UI.
+let hostedAvailable=null;
+(async function probeHosted(){
+  try{const r=await fetch('healthz',{cache:'no-store'});hostedAvailable=r.ok;}
+  catch(e){hostedAvailable=false;}
+  if(hostedAvailable)return;
+  PRESETS.hosted.help='This copy of Headline Hunter is a static site with <b>no shared AI service</b>. Pick another provider and paste your own key (it stays in this browser), or use “Copy prompt”. If your organisation runs a hosted copy, put its address in Base URL.';
+  const opt=document.querySelector('#setProvider option[value="hosted"]');
+  if(opt)opt.textContent='Hosted (shared) — not available on this site';
+  refreshProviderBadge();
+})();
+
 /* =================== load saved =================== */
 (function load(){
   try{const d=JSON.parse(localStorage.getItem(STORE)||'{}');fields.forEach((f,i)=>{if(d[i]!=null)f.value=d[i];});}catch(e){}
   try{paperText=localStorage.getItem('hh-paper')||'';}catch(e){}
 })();
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS)||'null')||defaultSettings();}catch(e){return defaultSettings();}}
-function defaultSettings(){return{provider:'hosted',...PRESETS.hosted,key:''};}
+function defaultSettings(){const p=hostedAvailable===false?'anthropic':'hosted';return{provider:p,...PRESETS[p],key:''};}
 
 /* =================== fields: counters, preview, progress =================== */
 fields.forEach(f=>{f.addEventListener('input',()=>{markEdited(f);updateCounter(f);updateProgress();updatePreview();save();});updateCounter(f);});
@@ -599,6 +613,8 @@ function copyPrompt(){
 async function callLLM(s,prompt,system){
   if(s.format==='hosted'){
     // Calls our own backend (app.py) — the API key lives on the server.
+    if(hostedAvailable===false&&!s.base)
+      throw new Error('This site has no shared AI service. Open Settings and pick a provider with your own key, or use “Copy prompt”.');
     const base=(s.base||'').replace(/\/$/,'');
     const headers={'content-type':'application/json'};
     if(s.key)headers['X-HH-Access']=s.key;          // optional shared passcode
