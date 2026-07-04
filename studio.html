@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Headline Hunter Studio · Curtin Media Prep</title>
+<title>Headline Hunter Studio · Media Prep</title>
 <style>
   :root{
     --gold:#C7A04E;--gold-bright:#E8C268;--ink:#2b2b2b;--charcoal:#3a3a3a;
@@ -200,7 +200,7 @@
 </div>
 
 <header class="hero">
-  <div class="brand"><span class="logo">C</span> Curtin University · Media Communications</div>
+  <div class="brand"><span class="logo">H</span> Media Communications</div>
   <h1>Headline <span class="hl">Hunter</span> Studio</h1>
   <p class="sub">Upload your paper, let your chosen AI draft a first pass, then sharpen it into a story Media Comms will love.</p>
   <div class="score">✨ Story strength: <b id="scoreNum">0%</b></div>
@@ -246,10 +246,10 @@
         <input type="text" id="headlineInput" data-track maxlength="120" placeholder="Type your best headline here...">
         <div class="counter" id="hlCounter">0 / 120 — aim for punchy (under 70 reads best)</div>
         <div class="preview">
-          <div class="masthead" id="pvMasthead">The Curtin Chronicle</div>
+          <div class="masthead" id="pvMasthead">The Daily Chronicle</div>
           <div class="pv-headline empty" id="pvHeadline">Your headline appears here as you type…</div>
           <div class="pv-sub" id="pvSub"></div>
-          <div class="byline">Research · Curtin University</div>
+          <div class="byline">Research · Media Communications</div>
         </div>
       </div>
       <div class="field">
@@ -299,7 +299,7 @@
     <button class="act b-dark" onclick="window.print()">🖨️ Print worksheet</button>
     <button class="act b-ghost" onclick="resetAll()">↺ Start fresh</button>
   </div>
-  <footer>Auto-saves in this browser. Built for the Curtin Media &amp; Communications course. 🎓</footer>
+  <footer>Auto-saves in this browser. Built for media &amp; communications coursework. 🎓</footer>
 </main>
 
 <!-- ============ IMPORT OVERLAY ============ -->
@@ -450,7 +450,7 @@ function updatePreview(){
   const outlet=document.getElementById('f_outlet').value.trim();
   if(h){pv.textContent=h;pv.classList.remove('empty');}else{pv.textContent='Your headline appears here as you type…';pv.classList.add('empty');}
   pvSub.textContent=s;
-  pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Curtin Chronicle';
+  pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Daily Chronicle';
 }
 updatePreview();
 let lastPct=0;
@@ -777,7 +777,7 @@ function downloadPressPDF(){
     doc.text(new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}),W-M,y,{align:'right'});
     y+=10;doc.setDrawColor(199,160,78);doc.setLineWidth(1.4);doc.line(M,y,W-M,y);y+=24;
     // source · headline · subhead
-    para('CURTIN UNIVERSITY · MEDIA COMMUNICATIONS',{size:9,style:'bold',color:[150,140,90],gap:16});
+    para('MEDIA COMMUNICATIONS',{size:9,style:'bold',color:[150,140,90],gap:16});
     para(headline,{size:22,style:'bold',color:[20,20,20],gap:9,lh:1.18});
     para(v('soWhatTease'),{size:13,style:'italic',color:[90,90,90],gap:20,lh:1.3});
     // body — inverted pyramid: what (lede) → so what → now what
@@ -789,7 +789,7 @@ function downloadPressPDF(){
     // boilerplate / contact
     ensure(20);doc.setDrawColor(220,220,220);doc.setLineWidth(1);doc.line(M,y,W-M,y);y+=18;
     para('Media contact: [Name] · [email] · [phone]',{size:9,color:[120,120,120],gap:8});
-    para('Notes to editors: Based on research from Curtin University. Full paper and interviews available on request.',
+    para('Notes to editors: Full paper and interviews available on request.',
       {size:9,color:[120,120,120],gap:0});
     const fname=(headline.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40))||'press-release';
     doc.save(fname+'.pdf');
@@ -801,7 +801,7 @@ function downloadPressPDF(){
 function copyBrief(){
   const g=id=>document.getElementById(id).value.trim()||'—';
   const txt=`HEADLINE HUNTER — MEDIA BRIEF
-Curtin University · Media Communications
+Media Communications
 ================================
 
 🎯 TARGET OUTLET / JOURNALIST

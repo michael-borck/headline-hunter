@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Headline Hunter · Curtin Media Prep</title>
+<title>Headline Hunter · Media Prep</title>
 <style>
   :root{
     --gold:#C7A04E;
@@ -166,7 +166,7 @@
 <div id="progressWrap"><div id="progressBar"></div></div>
 
 <header class="hero">
-  <div class="brand"><span class="logo">C</span> Curtin University · Media Communications</div>
+  <div class="brand"><span class="logo">H</span> Media Communications</div>
   <h1>Headline <span class="hl">Hunter</span></h1>
   <p class="sub">Turn your research into a story the world wants to read. Craft a hook-worthy headline and your core messages before it goes to Media Comms.</p>
   <div class="score">✨ Story strength: <b id="scoreNum">0%</b></div>
@@ -215,10 +215,10 @@
         <div class="counter" id="hlCounter">0 / 120 — aim for punchy (under 70 reads best)</div>
 
         <div class="preview">
-          <div class="masthead" id="pvMasthead">The Curtin Chronicle</div>
+          <div class="masthead" id="pvMasthead">The Daily Chronicle</div>
           <div class="pv-headline empty" id="pvHeadline">Your headline appears here as you type…</div>
           <div class="pv-sub" id="pvSub"></div>
-          <div class="byline">Research · Curtin University</div>
+          <div class="byline">Research · Media Communications</div>
         </div>
       </div>
 
@@ -286,7 +286,7 @@
     <button class="act b-ghost" onclick="resetAll()">↺ Start fresh</button>
   </div>
 
-  <footer>Your work auto-saves in this browser. Built for the Curtin Media &amp; Communications course. 🎓</footer>
+  <footer>Your work auto-saves in this browser. Built for media &amp; communications coursework. 🎓</footer>
 </main>
 
 <div id="toast"><span class="dot"></span><span id="toastMsg">Saved!</span></div>
@@ -334,7 +334,7 @@ function updatePreview(){
   if(h){ pv.textContent=h; pv.classList.remove('empty'); }
   else { pv.textContent='Your headline appears here as you type…'; pv.classList.add('empty'); }
   pvSub.textContent=s;
-  pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Curtin Chronicle';
+  pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Daily Chronicle';
 }
 updatePreview();
 
@@ -365,7 +365,7 @@ function copyBrief(){
   const g=id=>document.getElementById(id).value.trim()||'—';
   const txt=
 `HEADLINE HUNTER — MEDIA BRIEF
-Curtin University · Media Communications
+Media Communications
 ================================
 
 🎯 TARGET OUTLET / JOURNALIST

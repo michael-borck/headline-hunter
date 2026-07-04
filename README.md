@@ -1,6 +1,6 @@
 # Headline Hunter 🎯
 
-Two web forms that turn the Curtin Media Communications worksheets (*Headline Hunting* + *Key Messages*) into a fun, interactive tool for prepping research for media.
+Two web forms that turn classic media-communications worksheets (*Headline Hunting* + *Key Messages*) into a fun, interactive tool for prepping research for media.
 
 **Try it now:** [landing page](https://michael-borck.github.io/headline-hunter/) · [Studio (AI)](https://michael-borck.github.io/headline-hunter/app/studio.html) · [simple worksheet](https://michael-borck.github.io/headline-hunter/app/index.html)
 
@@ -136,7 +136,7 @@ Then open `https://hunter.example.edu/` — the page defaults to the **Hosted (s
 
 ## License
 
-Released under the [MIT License](LICENSE) — © 2026 Michael Borck. Built for the Curtin University Media & Communications course.
+Released under the [MIT License](LICENSE) — © 2026 Michael Borck. Built for media & communications teaching.
 
 ### Third-party libraries
 The PDF/DOCX parsers and the PDF generator are bundled in `lib/` and remain under their own licenses (their notices are preserved in the minified files):
