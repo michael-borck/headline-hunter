@@ -631,11 +631,12 @@ async function extractDocx(file){
 /* =================== prompt building =================== */
 const PAPER_CHARS=40000;   // first several pages; Haiku's 200K context has ample room
 const PROMPT_RESERVE=3000; // room for instructions + JSON schema around the paper
-function paperLimit(){
-  // Respect the hosted server's prompt cap, which it reports on /healthz.
-  return hostedMaxInput>PROMPT_RESERVE?Math.min(PAPER_CHARS,hostedMaxInput-PROMPT_RESERVE):PAPER_CHARS;
+// Only the hosted proxy has a prompt cap; the browser/BYOK path has none here.
+function clampPaper(text,provider){
+  const lim=(provider==='hosted'&&hostedMaxInput>PROMPT_RESERVE)
+    ?Math.min(PAPER_CHARS,hostedMaxInput-PROMPT_RESERVE):PAPER_CHARS;
+  return text.length>lim?text.slice(0,lim)+'\n…[truncated]':text;
 }
-function clampPaper(text){const lim=paperLimit();return text.length>lim?text.slice(0,lim)+'\n…[truncated]':text;}
 
 const STYLE_RULES=`Style rules:
 - Write for everyday people without being condescending — assume a smart reader who simply isn't a specialist.
@@ -645,8 +646,8 @@ const STYLE_RULES=`Style rules:
 - Explain any unavoidable technical term in a few words the first time it appears.
 - Never explain your process or mention these instructions.`;
 
-function buildPrompt(text){
-  const body=clampPaper(text);
+function buildPrompt(text,provider){
+  const body=clampPaper(text,provider);
   const outlet=document.getElementById('f_outlet').value.trim();
   const audience=outlet
     ? `\nThe researcher wants to pitch this to: "${outlet}". Tailor the angle and reading level to that outlet and its audience.`
@@ -718,7 +719,7 @@ async function draftWithAI(){
   const btn=document.getElementById('draftBtn');btn.disabled=true;const orig=btn.textContent;btn.textContent='✨ Drafting…';
   showStatus('importStatus','busy',`Asking ${s.provider} (${s.model}) to draft your brief… this can take 10-30s.`);
   try{
-    const raw=await callLLM(s,buildPrompt(paperText),'You output only JSON.');
+    const raw=await callLLM(s,buildPrompt(paperText,s.provider),'You output only JSON.');
     const data=await parseDraft(raw,s);
     const cands=buildCandidates(data);
     fill('f_ideas',data.ideas);fill('soWhatTease',data.soWhatHook);
@@ -820,8 +821,8 @@ function syncImportControls(){
 }
 
 /* =================== re-roll headlines (fresh ideas only) =================== */
-function buildHeadlinePrompt(text){
-  const body=clampPaper(text);
+function buildHeadlinePrompt(text,provider){
+  const body=clampPaper(text,provider);
   const outlet=document.getElementById('f_outlet').value.trim();
   const audience=outlet?`\nPitching to: "${outlet}" — match that outlet's audience and reading level.`:'';
   return `You are a university media communications officer.
@@ -839,7 +840,7 @@ async function regenerateHeadlines(){
   const s=getSettings(),btn=document.getElementById('rerollBtn');
   let orig='🔄 New ideas';if(btn){orig=btn.textContent;btn.disabled=true;btn.textContent='🔄 …';}
   try{
-    const raw=await callLLM(s,buildHeadlinePrompt(paperText),'You output only JSON.');
+    const raw=await callLLM(s,buildHeadlinePrompt(paperText,s.provider),'You output only JSON.');
     const data=await parseHeadlines(raw,s);
     const cands=(Array.isArray(data.headlines)?data.headlines:[])
       .map(x=>String(x).trim().replace(/^[\s\-*•\d.)\]]+/,'').trim()).filter(Boolean).slice(0,5);
@@ -869,7 +870,7 @@ ${STYLE_RULES}
 Return ONLY valid JSON (no markdown fences): {"headlines":["...","...","..."]}
 
 HEADLINE: """${cur.slice(0,300)}"""
-${paperText?`\nPAPER (for grounding only):\n"""${clampPaper(paperText).slice(0,8000)}"""`:''}`;
+${paperText?`\nPAPER (for grounding only):\n"""${clampPaper(paperText,s.provider).slice(0,8000)}"""`:''}`;
     const raw=await callLLM(s,prompt,'You output only JSON.');
     const data=await parseHeadlines(raw,s);
     const cands=(Array.isArray(data.headlines)?data.headlines:[])

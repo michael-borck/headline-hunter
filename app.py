@@ -33,7 +33,7 @@ load_dotenv()
 
 MODEL = os.environ.get("HH_MODEL", "claude-haiku-4-5")
 ACCESS_KEY = os.environ.get("HH_ACCESS_KEY", "").strip()
-MAX_INPUT_CHARS = int(os.environ.get("HH_MAX_INPUT_CHARS", "48000"))
+MAX_INPUT_CHARS = int(os.environ.get("HH_MAX_INPUT_CHARS", "24000"))
 MAX_OUTPUT_TOKENS = int(os.environ.get("HH_MAX_OUTPUT_TOKENS", "1500"))
 RATE_LIMIT_PER_MIN = int(os.environ.get("HH_RATE_LIMIT_PER_MIN", "20"))
 

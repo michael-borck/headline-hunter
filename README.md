@@ -120,7 +120,7 @@ Then open `https://hunter.example.edu/` — the page defaults to the **Hosted (s
 | `ANTHROPIC_API_KEY` | — | **Required.** Your key (the only real secret). |
 | `HH_MODEL` | `claude-haiku-4-5` | Model for drafting. Bump to `claude-sonnet-4-6`/`claude-opus-4-8` for more polish. |
 | `HH_ACCESS_KEY` | *(blank)* | Shared passcode. Blank = open to anyone who can reach it. |
-| `HH_MAX_INPUT_CHARS` | `48000` | Prompt-size cap. The Studio reads this from `/healthz` and trims the paper to fit, so long papers don't 413. |
+| `HH_MAX_INPUT_CHARS` | `24000` | Prompt-size cap for the hosted proxy. The Studio reads it from `/healthz` and trims the paper to fit; browser/BYOK drafting is unaffected. |
 | `HH_MAX_OUTPUT_TOKENS` | `1500` | Cap the draft length. |
 | `HH_RATE_LIMIT_PER_MIN` | `20` | Per-IP requests per minute. |
 | `PORT` | `8000` | Port the app listens on. |
