@@ -16,7 +16,7 @@ The landing page and apps deploy to GitHub Pages automatically on every push to 
 
 | File | What it is | Needs |
 |------|-----------|-------|
-| **`index.html`** | The simple worksheet. Live newspaper preview, progress meter, copy/print, auto-save. | Just a browser — double-click it. |
+| **`index.html`** | The simple worksheet. Live newspaper preview, reading-level badge, progress meter, copy/print, auto-save. | Just a browser — double-click it. |
 | **`studio.html`** | Everything above **+ import a paper (PDF/DOCX/TXT) and let an AI draft your fields**. | A browser; an AI provider (below) only if you want AI drafting. |
 
 Both work **fully offline** — the PDF/DOCX parsers are bundled in the `lib/` folder. The only thing that needs a network is AI drafting (and only to reach the provider you choose). Keep the `lib/` folder next to `studio.html`.
@@ -28,10 +28,12 @@ Both work **fully offline** — the PDF/DOCX parsers are bundled in the `lib/` f
 1. Click **⚙️ Settings**, pick a provider, **Save**. (The hosted service is the default — no key needed.)
 2. Click **📄 Import paper**, drop in your PDF/DOCX/TXT. Optionally set the **audience/outlet** and a **tone** (Plain / Warm / Formal / Playful) — both steer the whole draft.
 3. Click **✨ Draft my brief with AI** — fields fill with editable drafts grounded in the paper (labelled *"AI draft — edit me"*).
-4. **Pick your headline.** The AI offers 3–5 candidates under the headline field — tap one to use it (you can still edit), or hit **🔄 New ideas** to re-roll fresh ones in your chosen tone. *AI suggests, you confirm.*
+4. **Pick your headline.** The AI offers 3–5 candidates under the headline field — tap one to use it (you can still edit), or hit **🔄 New ideas** to re-roll fresh ones in your chosen tone. *AI suggests, you confirm.* Candidates over 70 characters are flagged with their length; hit **✂️ Shorten** to get 70-character-or-fewer options for the one you're looking at.
 5. Sharpen the rest, then **📄 Press release (PDF)** downloads a formatted, inverted-pyramid release (headline → significance → call to action) ready to send to Media Comms.
 
-> The draft is **grounded in the paper's text** (first ~40k characters — a full abstract/intro/results, plenty on Haiku's 200K context) with a "don't invent findings" guardrail. It's still a synthesis, not a quote — have researchers sanity-check it, especially the *"Now what?"* call to action.
+> A **reading-level badge** under the preview (in both the simple worksheet and the Studio) shows an approximate Flesch-Kincaid grade for the headline and key messages (green ≤ Year 10, amber to Year 13, red beyond). The AI prompt aims for a Year 9–10 level, but the badge is the honest check — short sentences and plain words move it fastest.
+>
+> The draft is **grounded in the paper's text** (first ~40k characters — a full abstract/intro/results, plenty on Haiku's 200K context) with a "don't invent findings" guardrail, and drafting uses a low temperature so it stays close to the source. If a model returns malformed JSON, the Studio retries once as a reformat-only call, then salvages the fields from the raw reply rather than losing the draft. It's still a synthesis, not a quote — have researchers sanity-check it, especially the *"Now what?"* call to action.
 
 No AI key? Use **📋 Copy prompt** instead — it builds a ready-made prompt from your paper that you paste into Claude/ChatGPT yourself, then paste the answers back. Zero keys, zero cost.
 

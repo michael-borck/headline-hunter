@@ -128,6 +128,14 @@
   .preview .pv-sub{font-family:Georgia,serif;text-align:center;color:#555;margin-top:10px;font-size:14.5px;font-style:italic}
   .preview .byline{text-align:center;font-size:11px;color:#aaa;margin-top:12px;letter-spacing:.1em;text-transform:uppercase}
 
+  /* reading level badge (approx. Flesch-Kincaid grade) */
+  .read{display:none;flex-wrap:wrap;align-items:center;gap:9px;margin-top:14px;font-size:13px;color:#7a7363}
+  .read.show{display:flex}
+  .read .grade{font-weight:800;padding:3px 11px;border-radius:30px;background:#f1ead8;border:1px solid var(--line);color:#5f5638}
+  .read .grade.ok{background:#e6f3ea;border-color:#b9ddc6;color:#2f6e48}
+  .read .grade.warn{background:#fbf2dc;border-color:#ecd9a6;color:#8a6d2f}
+  .read .grade.hard{background:#fbe9e4;border-color:#ecc3b7;color:#a4402b}
+
   /* actions */
   .actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:10px 0 40px}
   button.act{font-family:inherit;font-size:15px;font-weight:700;border:none;cursor:pointer;
@@ -219,6 +227,10 @@
           <div class="pv-headline empty" id="pvHeadline">Your headline appears here as you type…</div>
           <div class="pv-sub" id="pvSub"></div>
           <div class="byline">Research · Media Communications</div>
+        </div>
+        <div class="read" id="readBox">
+          <span class="grade" id="readGrade">—</span>
+          <span id="readHint"></span>
         </div>
       </div>
 
@@ -335,8 +347,42 @@ function updatePreview(){
   else { pv.textContent='Your headline appears here as you type…'; pv.classList.add('empty'); }
   pvSub.textContent=s;
   pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Daily Chronicle';
+  updateReadability();
 }
 updatePreview();
+
+/* ---------- readability (approx. Flesch-Kincaid grade) ---------- */
+const READ_TARGET=10;   // Year 9-10 — plain enough for a general audience
+function syllables(word){
+  word=String(word).toLowerCase().replace(/[^a-z]/g,'');if(!word)return 0;
+  if(word.length<=3)return 1;
+  word=word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');
+  const m=word.match(/[aeiouy]{1,2}/g);
+  return m?m.length:1;
+}
+function readingGrade(text){
+  const clean=String(text).replace(/\s+/g,' ').trim();if(!clean)return null;
+  const sentences=(clean.match(/[.!?]+(?:\s|$)/g)||[]).length||1;
+  const words=clean.match(/[A-Za-z0-9'’-]+/g)||[];if(words.length<8)return null;
+  const syl=words.reduce((n,w)=>n+syllables(w),0);
+  const g=0.39*(words.length/sentences)+11.8*(syl/words.length)-15.59;
+  return Math.max(1,Math.round(g*10)/10);
+}
+function updateReadability(){
+  const box=document.getElementById('readBox');if(!box)return;
+  const ids=['headlineInput','soWhatTease','f_what','f_sowhat','f_nowhat'];
+  const text=ids.map(id=>document.getElementById(id).value.trim()).filter(Boolean).join('. ');
+  const g=readingGrade(text);
+  if(g==null){box.classList.remove('show');return;}
+  box.classList.add('show');
+  const gradeEl=document.getElementById('readGrade');
+  gradeEl.textContent='Year '+g.toFixed(1);
+  gradeEl.className='grade '+(g<=READ_TARGET?'ok':g<=13?'warn':'hard');
+  document.getElementById('readHint').textContent=
+    g<=READ_TARGET?'Plain English — easy for a general audience.'
+    :g<=13?'Getting wordy — shorten sentences and swap out jargon.'
+    :'Too dense for a general audience — cut long words and sentences.';
+}
 
 /* ---------- progress / story strength ---------- */
 let lastPct=0;

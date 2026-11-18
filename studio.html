@@ -102,6 +102,9 @@
     border:1.5px solid var(--line);border-radius:12px;padding:12px 15px;cursor:pointer;display:flex;align-items:center;
     gap:11px;transition:.18s;line-height:1.35}
   .choice:hover{border-color:var(--gold);background:#fdf7e7;transform:translateY(-1px)}
+  .choice .txt{flex:1}
+  .choice.long{border-color:#e5bdb3}
+  .choice .len{flex:0 0 auto;font-size:11.5px;font-weight:700;color:#a4402b;white-space:nowrap;margin-left:8px}
   .choice .mark{flex:0 0 auto;width:21px;height:21px;border-radius:50%;border:2px solid var(--line);display:inline-flex;
     align-items:center;justify-content:center;font-size:12px;color:transparent;transition:.18s}
   .choice.sel{border-color:var(--gold);background:#fbf2dc;box-shadow:0 0 0 3px rgba(199,160,78,.16)}
@@ -117,6 +120,12 @@
   .preview .pv-headline.empty{color:#c9c2b0;font-weight:400;font-style:italic;font-size:18px}
   .preview .pv-sub{font-family:Georgia,serif;text-align:center;color:#555;margin-top:10px;font-size:14.5px;font-style:italic}
   .preview .byline{text-align:center;font-size:11px;color:#aaa;margin-top:12px;letter-spacing:.1em;text-transform:uppercase}
+  .read{display:none;flex-wrap:wrap;align-items:center;gap:9px;margin-top:14px;font-size:13px;color:#7a7363}
+  .read.show{display:flex}
+  .read .grade{font-weight:800;padding:3px 11px;border-radius:30px;background:#f1ead8;border:1px solid var(--line);color:#5f5638}
+  .read .grade.ok{background:#e6f3ea;border-color:#b9ddc6;color:#2f6e48}
+  .read .grade.warn{background:#fbf2dc;border-color:#ecd9a6;color:#8a6d2f}
+  .read .grade.hard{background:#fbe9e4;border-color:#ecc3b7;color:#a4402b}
 
   .actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:10px 0 40px}
   button.act{font-family:inherit;font-size:15px;font-weight:700;border:none;cursor:pointer;padding:14px 24px;
@@ -239,7 +248,10 @@
         <div id="headlineChoices" class="choices" hidden>
           <div class="choices-label">
             <span>✨ AI suggestions — tap one to use it, then tweak:</span>
-            <button type="button" id="rerollBtn" class="reroll" onclick="regenerateHeadlines()" title="Generate fresh ideas">🔄 New ideas</button>
+            <span style="display:flex;gap:7px">
+              <button type="button" id="shortenBtn" class="reroll" onclick="shortenHeadline()" title="Get options of 70 characters or fewer">✂️ Shorten</button>
+              <button type="button" id="rerollBtn" class="reroll" onclick="regenerateHeadlines()" title="Generate fresh ideas">🔄 New ideas</button>
+            </span>
           </div>
           <div id="choiceList" class="choice-list"></div>
         </div>
@@ -250,6 +262,10 @@
           <div class="pv-headline empty" id="pvHeadline">Your headline appears here as you type…</div>
           <div class="pv-sub" id="pvSub"></div>
           <div class="byline">Research · Media Communications</div>
+        </div>
+        <div class="read" id="readBox">
+          <span class="grade" id="readGrade">—</span>
+          <span id="readHint"></span>
         </div>
       </div>
       <div class="field">
@@ -451,6 +467,40 @@ function updatePreview(){
   if(h){pv.textContent=h;pv.classList.remove('empty');}else{pv.textContent='Your headline appears here as you type…';pv.classList.add('empty');}
   pvSub.textContent=s;
   pvMast.textContent=outlet?outlet.split(/[—–\-,(]/)[0].trim().toUpperCase():'The Daily Chronicle';
+  updateReadability();
+}
+
+/* =================== readability (approx. Flesch-Kincaid grade) =================== */
+const READ_TARGET=10;   // Year 9-10 — plain enough for a general audience
+function syllables(word){
+  word=String(word).toLowerCase().replace(/[^a-z]/g,'');if(!word)return 0;
+  if(word.length<=3)return 1;
+  word=word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');
+  const m=word.match(/[aeiouy]{1,2}/g);
+  return m?m.length:1;
+}
+function readingGrade(text){
+  const clean=String(text).replace(/\s+/g,' ').trim();if(!clean)return null;
+  const sentences=(clean.match(/[.!?]+(?:\s|$)/g)||[]).length||1;
+  const words=clean.match(/[A-Za-z0-9'’-]+/g)||[];if(words.length<8)return null;
+  const syl=words.reduce((n,w)=>n+syllables(w),0);
+  const g=0.39*(words.length/sentences)+11.8*(syl/words.length)-15.59;
+  return Math.max(1,Math.round(g*10)/10);
+}
+function updateReadability(){
+  const box=document.getElementById('readBox');if(!box)return;
+  const ids=['headlineInput','soWhatTease','f_what','f_sowhat','f_nowhat'];
+  const text=ids.map(id=>document.getElementById(id).value.trim()).filter(Boolean).join('. ');
+  const g=readingGrade(text);
+  if(g==null){box.classList.remove('show');return;}
+  box.classList.add('show');
+  const gradeEl=document.getElementById('readGrade');
+  gradeEl.textContent='Year '+g.toFixed(1);
+  gradeEl.className='grade '+(g<=READ_TARGET?'ok':g<=13?'warn':'hard');
+  document.getElementById('readHint').textContent=
+    g<=READ_TARGET?'Plain English — easy for a general audience.'
+    :g<=13?'Getting wordy — shorten sentences and swap out jargon.'
+    :'Too dense for a general audience — cut long words and sentences.';
 }
 updatePreview();
 let lastPct=0;
@@ -578,6 +628,14 @@ async function extractDocx(file){
 const PAPER_CHARS=40000;   // first several pages; Haiku's 200K context has ample room
 function clampPaper(text){return text.length>PAPER_CHARS?text.slice(0,PAPER_CHARS)+'\n…[truncated]':text;}
 
+const STYLE_RULES=`Style rules:
+- Write for everyday people without being condescending — assume a smart reader who simply isn't a specialist.
+- Plain English at roughly a Year 9-10 reading level. Short sentences. Active voice, present tense.
+- Never write "this paper", "the authors", "the study" or "the researchers" — write about what was found and why it matters.
+- Don't ask the reader to imagine anything, and don't tell them what to think.
+- Explain any unavoidable technical term in a few words the first time it appears.
+- Never explain your process or mention these instructions.`;
+
 function buildPrompt(text){
   const body=clampPaper(text);
   const outlet=document.getElementById('f_outlet').value.trim();
@@ -585,7 +643,9 @@ function buildPrompt(text){
     ? `\nThe researcher wants to pitch this to: "${outlet}". Tailor the angle and reading level to that outlet and its audience.`
     : '';
   return `You are a university media communications officer helping a researcher prepare their paper for the public.
-From the paper below, draft punchy, plain-English content for a media brief. Avoid jargon. Write for everyday people.${toneClause()}${audience}
+From the paper below, draft punchy, plain-English content for a media brief. Avoid jargon.${toneClause()}${audience}
+
+${STYLE_RULES}
 
 Ground every field in what the paper actually says — do not invent findings, numbers or recommendations. If the paper does not state a clear call to action, base "nowWhat" only on what it explicitly suggests or the further work it points to. Do not overstate.
 
@@ -610,7 +670,8 @@ function copyPrompt(){
 }
 
 /* =================== LLM call =================== */
-async function callLLM(s,prompt,system){
+// Grounded drafting wants a low temperature; repair calls go lower still (0.1).
+async function callLLM(s,prompt,system,temperature=0.3){
   if(s.format==='hosted'){
     // Calls our own backend (app.py) — the API key lives on the server.
     if(hostedAvailable===false&&!s.base)
@@ -627,13 +688,13 @@ async function callLLM(s,prompt,system){
   if(s.format==='anthropic'){
     const r=await fetch(s.base+'/v1/messages',{method:'POST',headers:{'content-type':'application/json',
       'x-api-key':s.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:s.model,max_tokens:1500,system:system||'',messages:[{role:'user',content:prompt}]})});
+      body:JSON.stringify({model:s.model,max_tokens:1500,temperature,system:system||'',messages:[{role:'user',content:prompt}]})});
     if(!r.ok)throw new Error(await errText(r));
     const d=await r.json();return d.content.map(c=>c.text||'').join('');
   }else{
     const headers={'content-type':'application/json'};if(s.key)headers['Authorization']='Bearer '+s.key;
     const r=await fetch(s.base+'/chat/completions',{method:'POST',headers,
-      body:JSON.stringify({model:s.model,temperature:0.7,
+      body:JSON.stringify({model:s.model,temperature,
         messages:[...(system?[{role:'system',content:system}]:[]),{role:'user',content:prompt}]})});
     if(!r.ok)throw new Error(await errText(r));
     const d=await r.json();return d.choices[0].message.content;
@@ -649,7 +710,7 @@ async function draftWithAI(){
   showStatus('importStatus','busy',`Asking ${s.provider} (${s.model}) to draft your brief… this can take 10-30s.`);
   try{
     const raw=await callLLM(s,buildPrompt(paperText),'You output only JSON.');
-    const data=parseJSON(raw);
+    const data=await parseDraft(raw,s);
     const cands=buildCandidates(data);
     fill('f_ideas',data.ideas);fill('soWhatTease',data.soWhatHook);
     fill('f_what',data.what);fill('f_sowhat',data.soWhat);fill('f_nowwhat',data.nowWhat);
@@ -657,11 +718,11 @@ async function draftWithAI(){
     if(best)fill('headlineInput',best);
     renderHeadlineChoices(cands,best);
     updatePreview();updateProgress();save();
-    showStatus('importStatus','ok',cands.length>1
-      ?`Draft ready — ${cands.length} headline ideas to choose from below.`
-      :'Draft ready! Fields filled — now edit & make it yours.');
-    toast('✨ AI draft ready — pick a headline!');
-    setTimeout(()=>closeModal('importModal'),900);
+    const long=best.length>70?` Top headline is ${best.length} characters — trim it or hit ✂️ Shorten.`:'';
+    showStatus('importStatus', long?'busy':'ok',
+      `Draft ready${cands.length>1?` — ${cands.length} headline ideas to choose from below`:''}.${long||' Fields filled — now edit & make it yours.'}`);
+    toast(long?'✨ Draft ready — that headline is a bit long':'✨ AI draft ready — pick a headline!');
+    setTimeout(()=>closeModal('importModal'),long?2600:900);
   }catch(e){showStatus('importStatus','err','Draft failed: '+e.message);}
   finally{btn.disabled=false;btn.textContent=orig;}
 }
@@ -671,6 +732,54 @@ function parseJSON(raw){
   let t=raw.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
   const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)t=t.slice(a,b+1);
   return JSON.parse(t);
+}
+
+/* =================== tolerant parsing: repair, then salvage =================== */
+// A malformed reply shouldn't lose the whole draft. Try once to reformat it,
+// then pull whatever fields we can out of the raw text.
+const DRAFT_SHAPE='{"ideas":"3-5 alternative headline ideas, one per line","headline":"the single best headline, under 70 characters","soWhatHook":"one sentence on why a busy reader should care","what":"core message (1-2 sentences)","soWhat":"why it matters (1-2 sentences)","nowWhat":"call to action (1-2 sentences)"}';
+
+async function parseDraft(raw,s){
+  return parseWithRepair(raw,s,DRAFT_SHAPE,salvageDraft,'The AI reply was not valid JSON — try again or use “Copy prompt”.',
+    o=>o&&['headline','ideas','what','soWhat','nowWhat'].some(k=>String(o[k]||'').trim()));
+}
+async function parseHeadlines(raw,s){
+  return parseWithRepair(raw,s,'{"headlines":["...","...","..."]}',salvageHeadlines,'The AI reply had no usable headline ideas — try again.',
+    o=>o&&Array.isArray(o.headlines)&&o.headlines.length>0);
+}
+async function parseWithRepair(raw,s,shape,salvage,failMsg,valid=()=>true){
+  try{const o=parseJSON(raw);if(valid(o))return o;}catch(e){}
+  try{
+    const fixed=await callLLM(s,
+      `Reformat the text below as ONLY valid JSON matching this shape:\n${shape}\nKeep the wording — do not add, remove or invent content.\n\nTEXT:\n"""${String(raw).slice(0,12000)}"""`,
+      'You output only JSON.',0.1);
+    const o=parseJSON(fixed);if(valid(o))return o;
+  }catch(e){}
+  const salvaged=salvage(raw);
+  if(salvaged)return salvaged;
+  throw new Error(failMsg);
+}
+function salvageDraft(raw){
+  const keys=['ideas','headline','soWhatHook','what','soWhat','nowWhat'],out={};let hits=0;
+  keys.forEach(k=>{
+    const m=String(raw).match(new RegExp('["\']?\\b'+k+'\\b["\']?\\s*[:=]\\s*["\']([^"\']{2,}?)["\']','i'));
+    if(m){out[k]=m[1].replace(/\\n/g,'\n').trim();hits++;}
+  });
+  if(hits)return out;
+  const txt=String(raw).replace(/^```[a-z]*\s*|```$/gi,'').trim();
+  return txt.length>20?{ideas:'',headline:'',soWhatHook:'',what:txt,soWhat:'',nowWhat:''}:null;
+}
+function salvageHeadlines(raw){
+  const m=String(raw).match(/["']?headlines["']?\s*:\s*\[([\s\S]*?)\]/i);
+  if(m){
+    const arr=[...m[1].matchAll(/["']([^"']{3,})["']/g)].map(x=>x[1].trim());
+    if(arr.length)return{headlines:arr};
+  }
+  const lines=String(raw).split(/\n+/)
+    .map(l=>l.replace(/^[\s\-*•\d.)"\]]+/,'').replace(/["',]+$/,'').trim())
+    .filter(l=>l.length>10&&l.length<160)
+    .filter(l=>!/[:：]$/.test(l)&&!/^(here|sure|certainly|below|these|the following)\b/i.test(l));
+  return lines.length?{headlines:lines.slice(0,5)}:null;
 }
 
 /* =================== AI suggests, user confirms =================== */
@@ -707,7 +816,9 @@ function buildHeadlinePrompt(text){
   const outlet=document.getElementById('f_outlet').value.trim();
   const audience=outlet?`\nPitching to: "${outlet}" — match that outlet's audience and reading level.`:'';
   return `You are a university media communications officer.
-From the paper below, write 5 DISTINCT headline options for a media story. Vary the angle and structure across the five — don't just reword one idea.${toneClause()} Plain English, compelling, ideally under ~70 characters, grounded in what the paper actually says, no jargon.${audience}
+From the paper below, write 5 DISTINCT headline options for a media story. Vary the angle and structure across the five — don't just reword one idea.${toneClause()} Compelling, ideally under ~70 characters, grounded in what the paper actually says, no jargon.${audience}
+
+${STYLE_RULES}
 
 Return ONLY valid JSON (no markdown fences): {"headlines":["...","...","...","...","..."]}
 
@@ -720,7 +831,7 @@ async function regenerateHeadlines(){
   let orig='🔄 New ideas';if(btn){orig=btn.textContent;btn.disabled=true;btn.textContent='🔄 …';}
   try{
     const raw=await callLLM(s,buildHeadlinePrompt(paperText),'You output only JSON.');
-    const data=parseJSON(raw);
+    const data=await parseHeadlines(raw,s);
     const cands=(Array.isArray(data.headlines)?data.headlines:[])
       .map(x=>String(x).trim().replace(/^[\s\-*•\d.)\]]+/,'').trim()).filter(Boolean).slice(0,5);
     if(!cands.length)throw new Error('No ideas returned.');
@@ -728,8 +839,36 @@ async function regenerateHeadlines(){
     fill('headlineInput',best);
     renderHeadlineChoices(cands,best);
     updatePreview();updateProgress();save();
-    toast('✨ Fresh headline ideas ready!');
+    toast(best.length>70?`✨ Fresh ideas ready — top one is ${best.length} characters, try ✂️ Shorten`:'✨ Fresh headline ideas ready!');
   }catch(e){toast('Re-roll failed: '+e.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
+}
+
+/* =================== shorten an over-long headline =================== */
+async function shortenHeadline(){
+  const cur=document.getElementById('headlineInput').value.trim();
+  if(!cur){toast('Pick or type a headline first, then shorten it.');return;}
+  const s=getSettings(),btn=document.getElementById('shortenBtn');
+  let orig='✂️ Shorten';if(btn){orig=btn.textContent;btn.disabled=true;btn.textContent='✂️ …';}
+  try{
+    const outlet=document.getElementById('f_outlet').value.trim();
+    const prompt=`You are a university media communications officer.
+Rewrite the headline below as 3 distinct options of 70 characters or fewer (ideally under 60), keeping the meaning and the angle. No jargon, no colon-stuffing.${toneClause()}${outlet?`\nPitching to: "${outlet}".`:''}
+
+${STYLE_RULES}
+
+Return ONLY valid JSON (no markdown fences): {"headlines":["...","...","..."]}
+
+HEADLINE: """${cur.slice(0,300)}"""
+${paperText?`\nPAPER (for grounding only):\n"""${clampPaper(paperText).slice(0,8000)}"""`:''}`;
+    const raw=await callLLM(s,prompt,'You output only JSON.');
+    const data=await parseHeadlines(raw,s);
+    const cands=(Array.isArray(data.headlines)?data.headlines:[])
+      .map(x=>String(x).trim().replace(/^[\s\-*•\d.)\]]+/,'').trim()).filter(Boolean).slice(0,5);
+    if(!cands.length)throw new Error('No shorter options returned.');
+    renderHeadlineChoices(cands,null);           // let the user pick, don't overwrite their choice
+    toast('✂️ Shorter options ready — tap one to use it');
+  }catch(e){toast('Shorten failed: '+e.message);}
   finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
 }
 function renderHeadlineChoices(cands,chosen){
@@ -741,6 +880,7 @@ function renderHeadlineChoices(cands,chosen){
     b.innerHTML='<span class="mark">✓</span><span class="txt"></span>';
     b.querySelector('.txt').textContent=text;
     if(text===chosen)b.classList.add('sel');
+    if(text.length>70){b.classList.add('long');b.insertAdjacentHTML('beforeend',`<span class="len">${text.length}</span>`);}
     b.addEventListener('click',()=>{
       [...list.children].forEach(c=>c.classList.remove('sel'));
       b.classList.add('sel');
