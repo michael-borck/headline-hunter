@@ -431,9 +431,13 @@ const PRESETS={
 /* =================== hosted service detection =================== */
 // On static hosting (e.g. GitHub Pages) there is no backend, so the
 // "Hosted (shared)" provider can't work. Probe once and adapt the UI.
-let hostedAvailable=null;
+let hostedAvailable=null,hostedMaxInput=0;
 (async function probeHosted(){
-  try{const r=await fetch('healthz',{cache:'no-store'});hostedAvailable=r.ok;}
+  try{
+    const r=await fetch('healthz',{cache:'no-store'});
+    hostedAvailable=r.ok;
+    if(r.ok){const d=await r.json().catch(()=>null);if(d&&d.max_input_chars)hostedMaxInput=Number(d.max_input_chars)||0;}
+  }
   catch(e){hostedAvailable=false;}
   if(hostedAvailable)return;
   PRESETS.hosted.help='This copy of Headline Hunter is a static site with <b>no shared AI service</b>. Pick another provider and paste your own key (it stays in this browser), or use “Copy prompt”. If your organisation runs a hosted copy, put its address in Base URL.';
@@ -626,7 +630,12 @@ async function extractDocx(file){
 
 /* =================== prompt building =================== */
 const PAPER_CHARS=40000;   // first several pages; Haiku's 200K context has ample room
-function clampPaper(text){return text.length>PAPER_CHARS?text.slice(0,PAPER_CHARS)+'\n…[truncated]':text;}
+const PROMPT_RESERVE=3000; // room for instructions + JSON schema around the paper
+function paperLimit(){
+  // Respect the hosted server's prompt cap, which it reports on /healthz.
+  return hostedMaxInput>PROMPT_RESERVE?Math.min(PAPER_CHARS,hostedMaxInput-PROMPT_RESERVE):PAPER_CHARS;
+}
+function clampPaper(text){const lim=paperLimit();return text.length>lim?text.slice(0,lim)+'\n…[truncated]':text;}
 
 const STYLE_RULES=`Style rules:
 - Write for everyday people without being condescending — assume a smart reader who simply isn't a specialist.

@@ -33,7 +33,7 @@ Both work **fully offline** — the PDF/DOCX parsers are bundled in the `lib/` f
 
 > A **reading-level badge** under the preview (in both the simple worksheet and the Studio) shows an approximate Flesch-Kincaid grade for the headline and key messages (green ≤ Year 10, amber to Year 13, red beyond). The AI prompt aims for a Year 9–10 level, but the badge is the honest check — short sentences and plain words move it fastest.
 >
-> The draft is **grounded in the paper's text** (first ~40k characters — a full abstract/intro/results, plenty on Haiku's 200K context) with a "don't invent findings" guardrail, and drafting uses a low temperature so it stays close to the source. If a model returns malformed JSON, the Studio retries once as a reformat-only call, then salvages the fields from the raw reply rather than losing the draft. It's still a synthesis, not a quote — have researchers sanity-check it, especially the *"Now what?"* call to action.
+> The draft is **grounded in the paper's text** (up to ~40k characters — a full abstract/intro/results, plenty on Haiku's 200K context; trimmed to fit the hosted server's prompt cap) with a "don't invent findings" guardrail, and drafting uses a low temperature so it stays close to the source. If a model returns malformed JSON, the Studio retries once as a reformat-only call, then salvages the fields from the raw reply rather than losing the draft. It's still a synthesis, not a quote — have researchers sanity-check it, especially the *"Now what?"* call to action.
 
 No AI key? Use **📋 Copy prompt** instead — it builds a ready-made prompt from your paper that you paste into Claude/ChatGPT yourself, then paste the answers back. Zero keys, zero cost.
 
@@ -120,7 +120,7 @@ Then open `https://hunter.example.edu/` — the page defaults to the **Hosted (s
 | `ANTHROPIC_API_KEY` | — | **Required.** Your key (the only real secret). |
 | `HH_MODEL` | `claude-haiku-4-5` | Model for drafting. Bump to `claude-sonnet-4-6`/`claude-opus-4-8` for more polish. |
 | `HH_ACCESS_KEY` | *(blank)* | Shared passcode. Blank = open to anyone who can reach it. |
-| `HH_MAX_INPUT_CHARS` | `24000` | Reject pasted text longer than this. |
+| `HH_MAX_INPUT_CHARS` | `48000` | Prompt-size cap. The Studio reads this from `/healthz` and trims the paper to fit, so long papers don't 413. |
 | `HH_MAX_OUTPUT_TOKENS` | `1500` | Cap the draft length. |
 | `HH_RATE_LIMIT_PER_MIN` | `20` | Per-IP requests per minute. |
 | `PORT` | `8000` | Port the app listens on. |
